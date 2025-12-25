@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PDF Extractor Input Contract",
+  "type": "object",
+  "required": [
+    "input"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file_name",
+        "mime_type",
+        "file_size",
+        "received_at",
+        "source",
+        "pipeline",
+        "stage"
+      ],
+      "properties": {
+        "file_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mime_type": {
+          "type": "string",
+          "const": "application/pdf"
+        },
+        "file_size": {
+          "type": "number",
+          "minimum": 1
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string"
+        },
+        "pipeline": {
+          "type": "string",
+          "const": "pdf-extractor"
+        },
+        "stage": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

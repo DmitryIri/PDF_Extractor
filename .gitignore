@@ -28,3 +28,8 @@ logs/
 
 # === Secrets ===
 .env.*
+
+# Allow tracking of normative JSON schemas and contracts
+
+!docs/
+!docs/**/*.json
