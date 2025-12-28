@@ -50,7 +50,6 @@ def _read_stdin_json() -> Dict[str, Any]:
 
 
 def _validate_input(payload: Dict[str, Any]) -> Dict[str, Any]:
-    # Минимальная валидация контракта anchors.json (v2.4 / BoundaryDetector v1.0)
     missing = []
     for k in ("issue_id", "total_pages", "anchors"):
         if k not in payload:
@@ -69,7 +68,6 @@ def _validate_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(anchors, list):
         raise ValueError("anchors must be an array")
 
-    # На v1.0 достаточно проверить, что каждый anchor имеет page/type (остальное начнём требовать на шаге 3.2)
     for i, a in enumerate(anchors):
         if not isinstance(a, dict):
             raise ValueError(f"anchor[{i}] must be an object")
@@ -80,7 +78,79 @@ def _validate_input(payload: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(a["type"], str) or not a["type"].strip():
             raise ValueError(f"anchor[{i}].type must be a non-empty string")
 
-    return {"issue_id": issue_id, "total_pages": total_pages, "anchors": anchors}
+    return {
+        "issue_id": issue_id,
+        "total_pages": total_pages,
+        "anchors": anchors,
+    }
+
+
+def _build_pages_model(anchors: list, total_pages: int) -> Dict[int, Dict[str, Any]]:
+    pages: Dict[int, Dict[str, Any]] = {}
+
+    for p in range(1, total_pages + 1):
+        pages[p] = {
+            "page": p,
+            "anchors": [],
+            "by_type": {"doi": [], "text_block": [], "section_marker": [], "other": []},
+            "font_stats": {"max_font_size": None},
+            "regions": {"top_40": [], "middle": [], "bottom": []},
+        }
+
+    for a in anchors:
+        page = a.get("page")
+        if page not in pages:
+            continue
+
+        pages[page]["anchors"].append(a)
+
+        t = a.get("type")
+        if t in pages[page]["by_type"]:
+            pages[page]["by_type"][t].append(a)
+        else:
+            pages[page]["by_type"]["other"].append(a)
+
+        if t == "text_block":
+            fs = a.get("font_size")
+            if isinstance(fs, (int, float)):
+                cur = pages[page]["font_stats"]["max_font_size"]
+                if cur is None or fs > cur:
+                    pages[page]["font_stats"]["max_font_size"] = fs
+
+    for p in range(1, total_pages + 1):
+        pm = pages[p]
+        y_vals = []
+        for a in pm["anchors"]:
+            bb = a.get("bbox")
+            if isinstance(bb, list) and len(bb) == 4:
+                y0, y1 = bb[1], bb[3]
+                if isinstance(y0, (int, float)) and isinstance(y1, (int, float)):
+                    y_vals.extend([y0, y1])
+
+        if not y_vals:
+            continue
+
+        page_h = max(y_vals)
+        top_th = page_h * 0.40
+        bot_th = page_h * 0.70
+
+        for a in pm["anchors"]:
+            bb = a.get("bbox")
+            if not (isinstance(bb, list) and len(bb) == 4):
+                continue
+            y0, y1 = bb[1], bb[3]
+            if not (isinstance(y0, (int, float)) and isinstance(y1, (int, float))):
+                continue
+
+            y_mid = (y0 + y1) / 2.0
+            if y_mid <= top_th:
+                pm["regions"]["top_40"].append(a)
+            elif y_mid >= bot_th:
+                pm["regions"]["bottom"].append(a)
+            else:
+                pm["regions"]["middle"].append(a)
+
+    return pages
 
 
 def main() -> int:
@@ -88,13 +158,15 @@ def main() -> int:
         payload = _read_stdin_json()
         inp = _validate_input(payload)
 
-        # v1.0 skeleton: логика детекта будет добавлена на следующих шагах.
-        # Пока возвращаем пустой список границ, но envelope и контракты уже корректны.
+        # Stage 1: per-page model is built but not exposed
+        _build_pages_model(inp["anchors"], inp["total_pages"])
+
         data = {
             "issue_id": inp["issue_id"],
             "total_pages": inp["total_pages"],
             "article_starts": [],
         }
+
         _emit_success(data)
         return EXIT_SUCCESS
 
