@@ -4,6 +4,7 @@ import sys
 from typing import Any, Dict, Optional
 
 
+import policy_v1
 COMPONENT = "BoundaryDetector"
 VERSION = "1.0.0"
 
@@ -153,18 +154,162 @@ def _build_pages_model(anchors: list, total_pages: int) -> Dict[int, Dict[str, A
     return pages
 
 
+
+# === Stage 2-3: ArticleStartPolicy v1.0 implementation ===
+# Source of truth: docs/policies/article_start_policy_v_1_0.md
+# Notes:
+# - Facts-only deterministic implementation using pages_model from Stage 1.
+# - Boosters are computed and reported but are NOT mandatory in v1.0.
+
+from typing import List, Tuple
+
+POL = policy_v1.ARTICLE_START_POLICY_V1
+
+
+def _is_ru(a: Dict[str, Any]) -> bool:
+    return str(a.get("lang", "")).lower() in ("ru", "rus", "russian")
+
+
+def _is_en(a: Dict[str, Any]) -> bool:
+    return str(a.get("lang", "")).lower() in ("en", "eng", "english")
+
+
+def _has_marker_type(pm: Dict[str, Any], t: str) -> bool:
+    # Deterministic: relies on MetadataExtractor producing explicit marker types.
+    # If absent, returns False.
+    return bool(pm.get("by_type", {}).get(t))
+
+
+def _detect_ru_title(pm: Dict[str, Any]) -> bool:
+    # Policy: RU-title in top_40_percent AND max font on page.
+    max_fs = pm.get("font_stats", {}).get("max_font_size")
+    if max_fs is None:
+        return False
+
+    top = pm.get("regions", {}).get("top_40", [])
+    for a in top:
+        if not _is_ru(a):
+            continue
+        if a.get("type") != "text_block":
+            continue
+        fs = a.get("font_size")
+        if isinstance(fs, (int, float)) and fs == max_fs:
+            return True
+    return False
+
+
+def _detect_required_ru_blocks(pm0: Dict[str, Any], pm1: Dict[str, Any]) -> Dict[str, bool]:
+    # Policy: required blocks may be distributed across first 1–2 pages.
+    # We map required blocks to anchor types that must be produced by extractor.
+    # Facts-only: if extractor doesn't produce such type, we cannot claim presence.
+    mapping = {
+        "ru_title": "ru_title",
+        "ru_authors": "ru_authors",
+        "ru_affiliations": "ru_affiliations",
+        "ru_address": "ru_address",
+        "ru_abstract": "ru_abstract",
+    }
+
+    out: Dict[str, bool] = {}
+    for k in POL.required_ru_blocks:
+        t = mapping.get(k)
+        if not t:
+            out[k] = False
+            continue
+        out[k] = _has_marker_type(pm0, t) or _has_marker_type(pm1, t)
+    return out
+
+
+def _detect_optional_ru(pm0: Dict[str, Any], pm1: Dict[str, Any]) -> Dict[str, bool]:
+    mapping = {
+        "ru_keywords": "ru_keywords",
+        "ru_for_citation": "ru_for_citation",
+        "ru_corresponding_author": "ru_corresponding_author",
+        "ru_funding": "ru_funding",
+        "ru_conflict_of_interest": "ru_conflict_of_interest",
+        "ru_received_accepted": "ru_received_accepted",
+    }
+    out: Dict[str, bool] = {}
+    for k in POL.optional_ru_blocks:
+        t = mapping.get(k)
+        out[k] = bool(t) and (_has_marker_type(pm0, t) or _has_marker_type(pm1, t))
+    return out
+
+
+def _detect_en_block(pm0: Dict[str, Any], pm1: Dict[str, Any]) -> bool:
+    # Facts-only: if any of known EN markers exists on page 0/1.
+    # Requires extractor to create these marker types.
+    en_types = [
+        "en_title", "en_authors", "en_affiliations", "en_abstract", "en_keywords",
+        "en_for_citation", "en_corresponding_author", "en_funding",
+        "en_conflict_of_interest", "en_received_accepted",
+    ]
+    for t in en_types:
+        if _has_marker_type(pm0, t) or _has_marker_type(pm1, t):
+            return True
+    return False
+
+
+def _detect_doi_article(pm: Dict[str, Any]) -> Optional[str]:
+    for a in pm.get("by_type", {}).get("doi", []):
+        txt = str(a.get("text", a.get("value", ""))).strip()
+        if POL.doi_article_regex.match(txt):
+            return txt
+    return None
+
+
+def detect_article_starts(pages_model: Dict[int, Dict[str, Any]], total_pages: int) -> List[Dict[str, Any]]:
+    starts: List[Dict[str, Any]] = []
+
+    for pno in range(1, total_pages + 1):
+        pm0 = pages_model[pno]
+        pm1 = pages_model.get(pno + 1, {"by_type": {}, "regions": {}, "font_stats": {}})
+
+        ru_title = _detect_ru_title(pm0)
+        required = _detect_required_ru_blocks(pm0, pm1)
+
+        if not ru_title:
+            continue
+        if not all(required.values()):
+            continue
+
+        doi = _detect_doi_article(pm0) or _detect_doi_article(pm1)
+        opt_ru = _detect_optional_ru(pm0, pm1)
+        en_block = _detect_en_block(pm0, pm1)
+
+        signals: Dict[str, Any] = {
+            "ru_title": True,
+            "ru_authors": bool(required.get("ru_authors")),
+            "ru_affiliations": bool(required.get("ru_affiliations")),
+            "ru_address": bool(required.get("ru_address")),
+            "ru_abstract": bool(required.get("ru_abstract")),
+        }
+        if doi:
+            signals["doi_article"] = doi
+        if en_block:
+            signals["en_block"] = True
+
+        # Facts-only: policy does not define scoring; fixed confidence for "passed required".
+        starts.append({
+            "start_page": int(pno),
+            "confidence": 0.90,
+            "signals": signals,
+        })
+
+    return starts
+# === end Stage 2-3 ===
+
 def main() -> int:
     try:
         payload = _read_stdin_json()
         inp = _validate_input(payload)
 
         # Stage 1: per-page model is built but not exposed
-        _build_pages_model(inp["anchors"], inp["total_pages"])
-
+        pages_model = _build_pages_model(inp["anchors"], inp["total_pages"])
         data = {
             "issue_id": inp["issue_id"],
             "total_pages": inp["total_pages"],
-            "article_starts": [],
+            "article_starts": detect_article_starts(pages_model, inp["total_pages"]),
         }
 
         _emit_success(data)
