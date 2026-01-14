@@ -15,8 +15,8 @@ Claude обязан:
 Claude Code **обязан** прочитать и интерпретировать следующие документы в указанном порядке:
 
 1. `docs/governance/project_files_index.md`
-2. `docs/state/project_summary_vX.Y.md`
-3. `docs/state/session_closure_log_YYYY_MM_DD_vX.Y.md` (последний)
+2. `docs/state/project_summary_v2.6.md`
+3. `docs/state/session_closure_log_2026_01_14_v1.0.md`
 4. `docs/state/project_history_log.md`
 
 Без чтения этих файлов **запрещено**:
