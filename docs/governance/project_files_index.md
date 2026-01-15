@@ -76,10 +76,10 @@ Project Files являются **единственным Source of Truth**.
 - не обязаны совпадать с текущим состоянием.
 
 **Канонические файлы:**
-- `pdf_extractor_tech_spec_v_2_4.md`
-- `pdf_extractor_plan_v_2_3.md`
+- `pdf_extractor_techspec_v2.4.md`
+- `pdf_extractor_plan_v2.3.md`
 
-> **Примечание:** Текущие имена файлов используют underscore-разделители и отличаются от стандартного шаблона `vX.Y`. Это известная несогласованность; нормализация имён отложена до контролируемого переименования.
+> **Примечание:** Имена файлов Design-артефактов нормализованы к формату `vX.Y` в рамках репозитория (2026-01-15).
 
 ---
 
@@ -145,8 +145,8 @@ Project Files являются **единственным Source of Truth**.
   - `session_closure_log_YYYY_MM_DD_vX.Y.md`
 
 - `docs/design/`
-  - `pdf_extractor_tech_spec_v_2_4.md`
-  - `pdf_extractor_plan_v_2_3.md`
+  - `pdf_extractor_techspec_v2.4.md`
+  - `pdf_extractor_plan_v2.3.md`
 
 - `docs/infrastructure/` — *не поддерживается в данном репозитории (см. §2.D)*
 
