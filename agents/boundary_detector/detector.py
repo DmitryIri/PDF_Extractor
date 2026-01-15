@@ -4,7 +4,7 @@ import sys
 from typing import Any, Dict, Optional
 
 
-import policy_v1
+import policy_v_1_0
 COMPONENT = "BoundaryDetector"
 VERSION = "1.0.0"
 
@@ -163,7 +163,7 @@ def _build_pages_model(anchors: list, total_pages: int) -> Dict[int, Dict[str, A
 
 from typing import List, Tuple
 
-POL = policy_v1.ARTICLE_START_POLICY_V1
+POL = policy_v_1_0.ARTICLE_START_POLICY_V1
 
 
 def _is_ru(a: Dict[str, Any]) -> bool:
