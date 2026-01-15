@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/techspec/pdf_extractor_tech_spec_v_2_4.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v2.4.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 
@@ -42,7 +42,7 @@ Each component:
 - **Single carrier of ArticleStartPolicy** — applies `policy_v1.py`
 - DOI alone is NEVER sufficient for article start detection
 - Requires all 5 RU blocks: ru_title, ru_authors, ru_affiliations, ru_address, ru_abstract
-- Policy documentation: `docs/policies/article_start_policy_v_1_0.md`
+- Policy documentation: `docs/policies/article_start_detection_policy_v_1_0.md`
 
 ### InputValidator / PDFInspector
 - Validation and structural inspection of input PDF
@@ -74,8 +74,7 @@ Virtual environment: `.venv/`
 ## Policy Versioning
 
 Policies are versioned and canonical. Changes require new version release (e.g., v1.0 → v1.1):
-- `docs/policies/article_start_policy_v_1_0.md`
-- `docs/policies/boundary_detector_v_1_0.md`
+- `docs/policies/article_start_detection_policy_v_1_0.md`
 - `agents/boundary_detector/policy_v1.py` — code implementation of policy
 
 ## File Layout
@@ -87,10 +86,10 @@ agents/           # Pipeline components (Python)
   metadata_extractor/
   boundary_detector/
 docs/             # Canonical documentation
-  techspec/       # Technical specifications
+  governance/     # Meta-documents (protocols, policies index)
+  state/          # Project state (summaries, session logs)
+  design/         # TechSpec, Plan, component designs
   policies/       # Versioned policy documents
-  plans/          # Implementation plans
-  summaries/      # Session summaries
 tests/            # Unit and golden tests (empty, to be implemented)
 scripts/          # Utility scripts (empty)
 shared/           # Shared utilities (empty)
