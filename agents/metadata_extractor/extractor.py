@@ -2,10 +2,11 @@
 # PDF Extractor — MetadataExtractor
 # Canonical deterministic extractor:
 # - emits doi anchors (value+bbox)
-# - emits text_block anchors (text+lang+bbox+font_size)
+# - emits text_block anchors (text+lang+bbox+font_size+font_name)
 # - emits required RU blocks (ru_title, ru_authors, ru_affiliations, ru_address, ru_abstract)
 #   strictly per docs/policies/ru_blocks_extraction_policy_v_1_0.md
 #
+# v1.2.0: Added font_name to text_block anchors for typography-based BoundaryDetector.
 # IMPORTANT: any change to RU block rules must be done by releasing a new policy version.
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import fitz  # PyMuPDF
 
 
 COMPONENT = "MetadataExtractor"
-VERSION = "1.1.0"
+VERSION = "1.2.0"  # Added font_name to text_block anchors for typography-based detection
 
 # Canonical DOI regex (case-insensitive)
 DOI_REGEX = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b", re.IGNORECASE)
@@ -101,7 +102,8 @@ def _extract_doi_anchors(doc: fitz.Document) -> List[Dict[str, Any]]:
 def _extract_text_blocks(doc: fitz.Document) -> List[Dict[str, Any]]:
     """
     Deterministic text_block anchors from PyMuPDF dict.
-    We emit one anchor per span with bbox and font_size, plus detected lang.
+    We emit one anchor per span with bbox, font_size, font_name, plus detected lang.
+    font_name is required for typography-based article start detection.
     """
     anchors: List[Dict[str, Any]] = []
     for page_index in range(doc.page_count):
@@ -123,6 +125,8 @@ def _extract_text_blocks(doc: fitz.Document) -> List[Dict[str, Any]]:
                     fs = span.get("size")
                     if not isinstance(fs, (int, float)):
                         continue
+                    # Extract font_name for typography-based detection
+                    font_name = span.get("font") or None
                     anchors.append(
                         {
                             "page": page_index + 1,
@@ -131,6 +135,7 @@ def _extract_text_blocks(doc: fitz.Document) -> List[Dict[str, Any]]:
                             "lang": _detect_lang(text_norm),
                             "bbox": [float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])],
                             "font_size": float(fs),
+                            "font_name": font_name,
                             "confidence": 0.90,
                         }
                     )
