@@ -1,8 +1,8 @@
-# PDF Extractor — TechSpec v2.4
+# PDF Extractor — TechSpec v_2_4
 
 **Статус:** Canonical (Self‑Contained)  
 **Дата:** 2025‑12‑28  
-**Предыдущая версия:** TechSpec v2.3.1  
+**Предыдущая версия:** TechSpec v_2_3.1  
 
 ---
 
@@ -172,14 +172,14 @@
 
 Пайплайн использует versioned policies. Политика — часть системы, обязательна для воспроизводимости и аудита.
 
-### 8.1 ArticleStartPolicy v1.0 (Canonical)
+### 8.1 ArticleStartPolicy v_1_0 (Canonical)
 **Носитель политики:** BoundaryDetector.
 
 **Канон:**
 - DOI **никогда** не является достаточным одиночным признаком начала статьи.
 - Решение принимается **только** по совокупности сигналов (RU‑структура, layout, типографика, маркеры секций, anti‑signals).
 
-Любые изменения политики — только через новую версию policy (v1.1+).
+Любые изменения политики — только через новую версию policy (v_1_1+).
 
 ---
 
@@ -298,10 +298,10 @@
 
 ---
 
-## ChangeLog (v2.4)
+## ChangeLog (v_2_4)
 
 - BoundaryDetector зафиксирован как **core‑компонент пайплайна**.
 - MetadataExtractor зафиксирован как компонент, возвращающий **только сырые anchors** без политики и фильтрации.
-- Добавлен раздел **Policy Dependencies**: ArticleStartPolicy v1.0 как нормативная часть системы.
+- Добавлен раздел **Policy Dependencies**: ArticleStartPolicy v_1_0 как нормативная часть системы.
 - Appendix A расширен контрактами для anchors и article_starts.
 

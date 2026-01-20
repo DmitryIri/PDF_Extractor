@@ -1,4 +1,4 @@
-# PDF Extractor — Plan v2.3
+# PDF Extractor — Plan v_2_3
 
 **Статус:** Canonical (Self‑Contained)  
 **Дата:** 2025‑12‑28  
@@ -8,7 +8,7 @@
 
 ## 1. Цель плана
 
-Зафиксировать **исполняемую, детерминированную последовательность разработки PDF Extractor**, синхронизированную с **TechSpec v2.4**.
+Зафиксировать **исполняемую, детерминированную последовательность разработки PDF Extractor**, синхронизированную с **TechSpec v_2_4**.
 
 План:
 - самодостаточен;
@@ -20,7 +20,7 @@
 
 ## 2. Базовые принципы (NON‑NEGOTIABLE)
 
-1. **Plan следует TechSpec v2.4.**
+1. **Plan следует TechSpec v_2_4.**
 2. **Один core‑компонент за раз.**
 3. **Facts only.**
 4. **Python — единственный вычислительный слой.**
@@ -77,7 +77,7 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 
 ## 5. Шаг 2. Реализация Python Core
 
-Компоненты реализуются **строго в порядке, определённом TechSpec v2.4**.
+Компоненты реализуются **строго в порядке, определённом TechSpec v_2_4**.
 
 ### 5.1 Общие требования ко всем компонентам
 
@@ -139,7 +139,7 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 **Цель:** Детерминированно определить начала статей.
 
 **Зависимости:**
-- ArticleStartPolicy v1.0
+- ArticleStartPolicy v_1_0
 
 **Результат:**
 - `article_starts`;
@@ -222,11 +222,11 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 ## 8. Правило изменений
 
 Любые изменения плана:
-- оформляются новой версией (v2.4+);
+- оформляются новой версией (v_2_4+);
 - требуют синхронизации с TechSpec;
 - фиксируются в project summary.
 
 ---
 
-**Plan v2.3 зафиксирован как Canonical.**
+**Plan v_2_3 зафиксирован как Canonical.**
 
