@@ -1,9 +1,9 @@
 # Session Closure Log — 2026-01-13
 
 **Статус:** Canonical  
-**Версия:** v1.0  
+**Версия:** v_1_0  
 **Проект:** PDF Extractor  
-**Protocol:** session_closure_protocol.md v1.0
+**Protocol:** session_closure_protocol.md v_1_0
 
 ---
 
@@ -287,7 +287,7 @@ Untracked files:
   golden_tests/mg_2025_12_article_starts.json (ignored by .gitignore)
 
 Last commit:
-  8dd8e89 docs(state): add session closure log 2026-01-12 v1.0
+  8dd8e89 docs(state): add session closure log 2026-01-12 v_1_0
 ```
 
 ---
@@ -331,7 +331,7 @@ git log --oneline -1
 git show --name-only --format=
 ```
 
-### Приоритет 2: Формализовать ArticleStartDetection Policy v1.0
+### Приоритет 2: Формализовать ArticleStartDetection Policy v_1_0
 
 **Based on Golden Test results:**
 - PRIMARY signal: Typography (MyriadPro-BoldIt 12pt)
@@ -340,13 +340,13 @@ git show --name-only --format=
 
 **Estimated time:** 30 min
 
-### Приоритет 3: Обновить TechSpec v2.4 → v2.5
+### Приоритет 3: Обновить TechSpec v_2_4 → v_2_5
 
 **Scope:** Edition-aware architecture (билингвальная структура журналов)
 
 **Estimated time:** 1 hour
 
-### Приоритет 4: Обновить Plan v2.3 → v2.4
+### Приоритет 4: Обновить Plan v_2_3 → v_2_4
 
 **Scope:** Reflect Phase 1 completion (diagnostics + golden test)
 
@@ -357,18 +357,18 @@ git show --name-only --format=
 ## 10. Ссылки на актуальные документы
 
 ### Governance
-- `session_closure_protocol.md` v1.0
-- `session_finalization_playbook.md` v1.0
-- `versioning_policy.md` v1.0
-- `documentation_rules_style_guide.md` v1.0
+- `session_closure_protocol.md` v_1_0
+- `session_finalization_playbook.md` v_1_0
+- `versioning_policy.md` v_1_0
+- `documentation_rules_style_guide.md` v_1_0
 
 ### State (Current)
-- `project_summary_pdf_extractor_v_2.md` v2.4 (needs update → v2.6)
+- `project_summary_pdf_extractor_v_2.md` v_2_4 (needs update → v_2_6)
 - `project_history_log_pdf_extractor.md` (needs append)
 
 ### Design
-- `pdf_extractor_tech_spec_v_2_4.md` v2.4 (needs update → v2.5)
-- `pdf_extractor_plan_v_2_3.md` v2.3 (needs update → v2.4)
+- `pdf_extractor_tech_spec_v_2_4.md` v_2_4 (needs update → v_2_5)
+- `pdf_extractor_plan_v_2_3.md` v_2_3 (needs update → v_2_4)
 
 ### Golden Test (NEW, not in git)
 - `golden_tests/mg_2025_12_article_starts.json`
@@ -377,7 +377,7 @@ git show --name-only --format=
 
 ## 11. CHANGELOG
 
-**v1.0 — 2026-01-13:**
+**v_1_0 — 2026-01-13:**
 - Golden Test выполнен: 28 articles, Precision 100%, Recall 100%
 - Typography marker validated: MyriadPro-BoldIt 12pt (sufficient PRIMARY signal)
 - Language-based duplicate filter implemented and validated (3 EN duplicates dropped)

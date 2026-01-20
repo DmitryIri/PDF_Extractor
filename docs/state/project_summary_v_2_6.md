@@ -1,6 +1,6 @@
 # Project Summary — PDF Extractor
 
-**Version:** v2.6  
+**Version:** v_2_6  
 **Status:** Canonical  
 **Date:** 2026-01-13
 
@@ -84,7 +84,7 @@ Pipeline выполняется строго последовательно:
 ### Завершённые core-компоненты
 - ✅ InputValidator — реализован и принят
 - ✅ PDFInspector — реализован и принят
-- ✅ MetadataExtractor — реализован (v1.0.1), извлекает anchors по всему PDF (DOI + text_block с bbox)
+- ✅ MetadataExtractor — реализован (v_1_0.1), извлекает anchors по всему PDF (DOI + text_block с bbox)
 
 ### В разработке
 **BoundaryDetector:**
@@ -93,7 +93,7 @@ Pipeline выполняется строго последовательно:
   - PRIMARY signal: MyriadPro-BoldIt, 12pt
   - FILTER: Language-based duplicate detection (RU/EN pairs)
   - BLACKLIST: Minimal (3 items)
-- Следующий шаг: Policy v1.0 formalization + code implementation
+- Следующий шаг: Policy v_1_0 formalization + code implementation
 
 ### Блокеры
 - Golden Test pending git commit (.gitignore blocking `*.json` → needs exception for `golden_tests/`)
@@ -103,17 +103,17 @@ Pipeline выполняется строго последовательно:
 ## 5. Канонические документы проекта
 
 ### TechSpec
-- PDF Extractor — TechSpec v2.4 (Canonical)
-- **Needs update → v2.5:** Edition-aware architecture (билингвальная структура)
+- PDF Extractor — TechSpec v_2_4 (Canonical)
+- **Needs update → v_2_5:** Edition-aware architecture (билингвальная структура)
 
 ### Plan
-- PDF Extractor — Plan v2.3 (Canonical)
-- **Needs update → v2.4:** Reflect Phase 1 completion
+- PDF Extractor — Plan v_2_3 (Canonical)
+- **Needs update → v_2_4:** Reflect Phase 1 completion
 
 ### Policies
-- ArticleStartPolicy v1.0 (Canonical) — validated by Golden Test
-- BoundaryDetector v1.0 (Canonical)
-- **Needs formalization:** ArticleStartDetection Policy v1.0 (based on Golden Test)
+- ArticleStartPolicy v_1_0 (Canonical) — validated by Golden Test
+- BoundaryDetector v_1_0 (Canonical)
+- **Needs formalization:** ArticleStartDetection Policy v_1_0 (based on Golden Test)
 
 ### Golden Tests (NEW)
 - `golden_tests/mg_2025_12_article_starts.json` (created, pending commit)
@@ -142,7 +142,7 @@ Pipeline выполняется строго последовательно:
 
 ## 7. Инварианты состояния
 
-На момент v2.6 зафиксированы следующие инварианты:
+На момент v_2_6 зафиксированы следующие инварианты:
 
 ### Architectural Invariants
 - MetadataExtractor не фильтрует anchors (возвращает raw observations)
@@ -191,7 +191,7 @@ Pipeline выполняется строго последовательно:
 **Owner:** Следующая сессия (Priority 1)
 
 ### Открытые вопросы
-Нет открытых вопросов на момент v2.6.
+Нет открытых вопросов на момент v_2_6.
 
 ---
 
@@ -204,19 +204,19 @@ Pipeline выполняется строго последовательно:
 - Git commit Golden Test + .gitignore update
 - **Handoff команды:** См. `session_closure_log_2026_01_13_v1_0.md`, §9
 
-### Priority 2: ArticleStartDetection Policy v1.0 (30 min)
+### Priority 2: ArticleStartDetection Policy v_1_0 (30 min)
 - Формализовать detection rules на основе Golden Test
 - Структура:
   - PRIMARY signal: Typography
   - FILTER: Language-based duplicate detection
   - ACCEPTANCE: 90% precision, 80% recall
 
-### Priority 3: TechSpec v2.4 → v2.5 (1 hour)
+### Priority 3: TechSpec v_2_4 → v_2_5 (1 hour)
 - Edition-aware architecture
 - Билингвальная структура как инвариант
 - Typography marker как PRIMARY signal
 
-### Priority 4: Plan v2.3 → v2.4 (30 min)
+### Priority 4: Plan v_2_3 → v_2_4 (30 min)
 - Reflect Phase 1 completion
 - Update Phase 2 scope (BoundaryDetector implementation)
 
@@ -226,7 +226,7 @@ Pipeline выполняется строго последовательно:
 
 ## 11. CHANGELOG
 
-### v2.6 — 2026-01-13
+### v_2_6 — 2026-01-13
 - **Phase 1 завершена:** Quality diagnostics + Golden Test validation
 - Typography marker validated: MyriadPro-BoldIt 12pt (PRIMARY signal, 100% metrics)
 - Golden Test created: mg_2025_12 (28 articles, pending commit)
@@ -235,8 +235,8 @@ Pipeline выполняется строго последовательно:
 - Обновлены инварианты состояния (edition-specific rules)
 - Зафиксированы принятые решения (D1-D3)
 
-### v2.4 — 2026-01-07
-- BoundaryDetector v1.0 policy документ добавлен
-- MetadataExtractor v1.0.1: bbox для DOI-anchors
-- Активная фаза: Plan v2.3 — Шаг 2.4 BoundaryDetector
-- ArticleStartPolicy v1.0 подтверждена как canonical
+### v_2_4 — 2026-01-07
+- BoundaryDetector v_1_0 policy документ добавлен
+- MetadataExtractor v_1_0.1: bbox для DOI-anchors
+- Активная фаза: Plan v_2_3 — Шаг 2.4 BoundaryDetector
+- ArticleStartPolicy v_1_0 подтверждена как canonical

@@ -2,7 +2,7 @@
 
 **Проект:** PDF Extractor  
 **Статус:** Canonical  
-**Версия:** v1.0  
+**Версия:** v_1_0  
 **Scope:** Подготовка канонической документационной базы и bootstrap для Claude Code
 
 ---
@@ -15,7 +15,7 @@
 
 ## 2. Что было сделано (пошагово)
 
-1. Пересоздан и утверждён канонический документ `PROJECT_FILES_INDEX v1.2`.
+1. Пересоздан и утверждён канонический документ `PROJECT_FILES_INDEX v_1_2`.
 2. Документ размещён в каноническом пути `/opt/projects/pdf-extractor/docs/governance/project_files_index.md`.
 3. Выявлено отсутствие `project_history_log.md` в репозитории.
 4. Создан и инициализирован `docs/state/project_history_log.md` как канонический State-артефакт.
@@ -26,7 +26,7 @@
 ## 3. Изменения
 
 ### Документация
-- Добавлен `PROJECT_FILES_INDEX v1.2` (новая каноническая версия).
+- Добавлен `PROJECT_FILES_INDEX v_1_2` (новая каноническая версия).
 - Добавлен `project_history_log.md` (инициализация файла).
 - Добавлен `claude.md` (bootstrap-инструкция).
 
@@ -62,13 +62,13 @@
 
 ## 8. Актуальные ссылки
 
-- `project_files_index.md v1.2`
+- `project_files_index.md v_1_2`
 - `project_history_log.md`
 - `claude.md`
-- `session_closure_protocol.md v1.0, §3–§6`
+- `session_closure_protocol.md v_1_0, §3–§6`
 
 ---
 
 ## 9. CHANGELOG
 
-- **v1.0 — 2026-01-14** — Первичное каноническое закрытие сессии: фиксация подготовительных работ и точки handoff к следующей сессии.
+- **v_1_0 — 2026-01-14** — Первичное каноническое закрытие сессии: фиксация подготовительных работ и точки handoff к следующей сессии.
