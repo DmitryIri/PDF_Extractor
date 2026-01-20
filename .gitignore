@@ -23,6 +23,9 @@ logs/
 .DS_Store
 .idea/
 .vscode/
+# === Claude Code temporary files ===
+conversation-*.txt
+*-you-are-in-doc-editing-mode-*.txt
 # === Secrets ===
 .env.*
 # Allow tracking of normative JSON schemas and contracts
