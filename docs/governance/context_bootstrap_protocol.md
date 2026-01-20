@@ -1,7 +1,7 @@
 # Context Bootstrap Protocol
 
 **Статус:** Canonical  
-**Версия:** v1.0
+**Версия:** v_1_0
 
 ## Назначение
 
@@ -103,4 +103,4 @@ AI обязан:
 
 ## 8. CHANGELOG
 
-- **v1.0** — первичная каноническая фиксация Context Bootstrap Protocol.
+- **v_1_0** — первичная каноническая фиксация Context Bootstrap Protocol.

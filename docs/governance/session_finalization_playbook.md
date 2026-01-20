@@ -1,7 +1,7 @@
 # Session Finalization Playbook
 
 **Статус:** Canonical  
-**Версия:** v1.0
+**Версия:** v_1_0
 
 ## Назначение
 
@@ -131,4 +131,4 @@ Playbook применяется:
 
 ## 7. CHANGELOG
 
-- **v1.0** — первичная каноническая фиксация Session Finalization Playbook.
+- **v_1_0** — первичная каноническая фиксация Session Finalization Playbook.

@@ -1,7 +1,7 @@
 # Session Closure Protocol
 
 **Статус:** Canonical  
-**Версия:** v1.0
+**Версия:** v_1_0
 
 ## Назначение
 
@@ -96,4 +96,4 @@
 
 ## 7. CHANGELOG
 
-- **v1.0** — первичная каноническая фиксация Session Closure Protocol.
+- **v_1_0** — первичная каноническая фиксация Session Closure Protocol.
