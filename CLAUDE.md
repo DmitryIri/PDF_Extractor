@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/design/pdf_extractor_techspec_v2.4.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_4.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 
@@ -35,11 +35,10 @@ Each component:
 - Extracts raw anchors (DOI, text_block, ru_title, ru_authors, etc.) from PDF
 - **Does NOT apply policy** — outputs observations only, no interpretation
 - Uses PyMuPDF (fitz) for PDF parsing
-- Policy for RU block extraction: `docs/policies/ru_blocks_extraction_policy_v_1_0.md`
 
 ### BoundaryDetector (`agents/boundary_detector/detector.py`)
 - Core component that determines article boundaries from anchors
-- **Single carrier of ArticleStartPolicy** — applies `policy_v1.py`
+- **Single carrier of ArticleStartPolicy** — applies `policy_v_1_0.py`
 - DOI alone is NEVER sufficient for article start detection
 - Requires all 5 RU blocks: ru_title, ru_authors, ru_affiliations, ru_address, ru_abstract
 - Policy documentation: `docs/policies/article_start_detection_policy_v_1_0.md`
@@ -73,9 +72,9 @@ Virtual environment: `.venv/`
 
 ## Policy Versioning
 
-Policies are versioned and canonical. Changes require new version release (e.g., v1.0 → v1.1):
+Policies are versioned and canonical. Changes require new version release (e.g., v_1_0 → v_1_1):
 - `docs/policies/article_start_detection_policy_v_1_0.md`
-- `agents/boundary_detector/policy_v1.py` — code implementation of policy
+- `agents/boundary_detector/policy_v_1_0.py` — code implementation of policy
 
 ## File Layout
 
