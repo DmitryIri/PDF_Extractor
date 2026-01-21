@@ -105,3 +105,23 @@ Article starts (BoundaryDetector output):
 ```json
 {"status": "success", "data": {"article_starts": [{start_page, confidence, signals: {...}}]}}
 ```
+
+## Versioning Gate (CRITICAL)
+
+**Rule:** Files with semantic version suffix pattern `*_v_<MAJOR>_<MINOR>.md` are **IMMUTABLE**.
+
+**Examples:**
+- `project_summary_v_2_6.md` — immutable
+- `techspec_v_2_4.md` — immutable
+- `policy_v_1_0.md` — immutable
+
+**To modify a versioned file:**
+1. **NEVER edit the existing file in-place**
+2. Create a new file with bumped version (e.g., `v_2_6` → `v_2_7`)
+3. Copy content from old version
+4. Apply changes to the new version
+5. Update version header and add CHANGELOG entry
+
+**If uncertain:** STOP and ask for confirmation before editing any file matching `*_v_*_*.md`.
+
+**Reference:** `docs/governance/versioning_policy.md` v_2_0, §1, Rule 3
