@@ -8,6 +8,7 @@ Implements ArticleStartDetection Policy v_1_0:
 - BLACKLIST: Known false positives
 """
 import json
+import os
 import re
 import sys
 from typing import Any, Dict, List, Optional
@@ -35,7 +36,9 @@ def _emit_success(data: Dict[str, Any]) -> None:
         "data": data,
         "error": None,
     }
-    sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
+    # Write to fd 1 (stdout) directly
+    output = json.dumps(out, ensure_ascii=False) + "\n"
+    os.write(1, output.encode('utf-8'))
 
 
 def _emit_error(exit_code: int, error_code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
@@ -51,7 +54,9 @@ def _emit_error(exit_code: int, error_code: str, message: str, details: Optional
             "details": details or {},
         },
     }
-    sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
+    # Write to fd 1 (stdout) directly
+    output = json.dumps(out, ensure_ascii=False) + "\n"
+    os.write(1, output.encode('utf-8'))
 
 
 def _read_stdin_json() -> Dict[str, Any]:
