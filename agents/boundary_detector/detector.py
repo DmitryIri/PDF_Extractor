@@ -167,12 +167,33 @@ def _apply_blacklist_filter(candidates: List[Dict[str, Any]]) -> List[Dict[str, 
     return filtered
 
 
-def _apply_duplicate_filter(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _has_bilingual_layout_marker(page: int, anchors: List[Dict[str, Any]]) -> bool:
     """
-    Apply RU/EN duplicate filter:
+    Check if page has bilingual layout markers suggesting it's a translation
+    of the previous page rather than a new article.
+
+    Returns True if page has section markers in English (KEYWORDS, ABSTRACT,
+    SUMMARY, INTRODUCTION) indicating structured bilingual content.
+    """
+    for anchor in anchors:
+        if anchor.get("page") == page and anchor.get("type") == "text_block":
+            text_upper = anchor.get("text", "").upper()
+            if any(marker in text_upper for marker in ["KEYWORDS", "ABSTRACT", "SUMMARY", "INTRODUCTION"]):
+                return True
+    return False
+
+
+def _apply_duplicate_filter(candidates: List[Dict[str, Any]], anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Apply RU/EN duplicate filter (narrow rule):
+    - Compare first candidate from each unique page
     - If page N is RU-dominant and page N+1 is EN-dominant
-    - AND both are consecutive candidates
-    - THEN drop page N+1 (keep RU)
+    - AND text lengths are similar (within 0.5x to 2.0x range)
+    - AND page N+1 has bilingual layout markers (KEYWORDS/ABSTRACT/INTRODUCTION)
+    - THEN drop ALL candidates from page N+1 (keep page N)
+
+    The bilingual layout marker check ensures we only filter pages that are
+    translations of the previous page (pages 43, 52, 155), not unrelated articles.
     """
     if not POLICY.duplicate_filter_enabled:
         return candidates
@@ -183,33 +204,48 @@ def _apply_duplicate_filter(candidates: List[Dict[str, Any]]) -> List[Dict[str, 
     # Sort by page for processing
     sorted_cands = sorted(candidates, key=lambda x: x["page"])
 
-    filtered = []
-    skip_next = False
+    # Track which pages to skip entirely
+    skip_pages = set()
 
-    for i in range(len(sorted_cands)):
-        if skip_next:
-            skip_next = False
-            continue
-
+    # First pass: identify pages to skip by comparing page representatives
+    i = 0
+    while i < len(sorted_cands):
         current = sorted_cands[i]
+        current_page = current["page"]
 
-        # Check if next candidate is consecutive page
-        if i + 1 < len(sorted_cands):
-            next_cand = sorted_cands[i + 1]
+        # Skip to next page (skip remaining candidates on current page)
+        j = i + 1
+        while j < len(sorted_cands) and sorted_cands[j]["page"] == current_page:
+            j += 1
+
+        # j now points to first candidate on next page (or end)
+        if j < len(sorted_cands):
+            next_cand = sorted_cands[j]
+            next_page = next_cand["page"]
 
             # Check if consecutive pages
-            if next_cand["page"] == current["page"] + 1:
-                # Check language dominance
+            if next_page == current_page + 1:
+                # Check language dominance on page representatives
                 current_ru = _is_cyrillic_dominant(current["text"])
                 next_en = _is_latin_dominant(next_cand["text"])
 
                 if current_ru and next_en:
-                    # RU followed by EN duplicate - keep RU, drop EN
-                    filtered.append(current)
-                    skip_next = True
-                    continue
+                    # Check length similarity
+                    len_current = len(current["text"])
+                    len_next = len(next_cand["text"])
 
-        filtered.append(current)
+                    if len_current > 0 and len_next > 0:
+                        ratio = len_next / len_current
+                        if 0.5 <= ratio <= 2.0:
+                            # Narrow check: only filter if next page has bilingual layout markers
+                            if _has_bilingual_layout_marker(next_page, anchors):
+                                # Mark next page for skipping
+                                skip_pages.add(next_page)
+
+        i = j if j < len(sorted_cands) else len(sorted_cands)
+
+    # Second pass: filter out ALL candidates from skipped pages
+    filtered = [c for c in sorted_cands if c["page"] not in skip_pages]
 
     return filtered
 
@@ -226,7 +262,7 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[int]:
     candidates = _apply_blacklist_filter(candidates)
 
     # Step 3: Apply RU/EN duplicate filter
-    candidates = _apply_duplicate_filter(candidates)
+    candidates = _apply_duplicate_filter(candidates, anchors)
 
     # Step 4: Extract unique page numbers and sort
     pages = sorted(set(cand["page"] for cand in candidates))
