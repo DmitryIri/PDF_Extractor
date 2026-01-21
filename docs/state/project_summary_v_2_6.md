@@ -1,8 +1,8 @@
 # Project Summary — PDF Extractor
 
-**Version:** v_2_6  
-**Status:** Canonical  
-**Date:** 2026-01-13
+**Version:** v_2_6
+**Status:** Canonical
+**Date:** 2026-01-15
 
 ---
 
@@ -63,7 +63,7 @@ Pipeline выполняется строго последовательно:
 
 ## 4. Текущее состояние реализации (As-Is)
 
-**Активная фаза:** Phase 1 ЗАВЕРШЕНА → Transition to Phase 2
+**Активная фаза:** Phase 2.5
 
 ### Завершённые milestones
 
@@ -111,9 +111,8 @@ Pipeline выполняется строго последовательно:
 - **Needs update → v_2_4:** Reflect Phase 1 completion
 
 ### Policies
-- ArticleStartPolicy v_1_0 (Canonical) — validated by Golden Test
+- ArticleStartDetection Policy v_1_0 (Canonical) — validated by Golden Test, формализована
 - BoundaryDetector v_1_0 (Canonical)
-- **Needs formalization:** ArticleStartDetection Policy v_1_0 (based on Golden Test)
 
 ### Golden Tests (NEW)
 - `golden_tests/mg_2025_12_article_starts.json` (created, pending commit)
@@ -226,7 +225,7 @@ Pipeline выполняется строго последовательно:
 
 ## 11. CHANGELOG
 
-### v_2_6 — 2026-01-13
+### v_2_6 — 2026-01-15
 - **Phase 1 завершена:** Quality diagnostics + Golden Test validation
 - Typography marker validated: MyriadPro-BoldIt 12pt (PRIMARY signal, 100% metrics)
 - Golden Test created: mg_2025_12 (28 articles, pending commit)
