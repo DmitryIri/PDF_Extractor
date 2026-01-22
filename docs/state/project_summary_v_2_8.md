@@ -109,7 +109,7 @@ Pipeline выполняется строго последовательно:
   - Rich article_starts schema
 
 ### Plan
-- PDF Extractor — Plan v_2_3 (Canonical) — updated to reference TechSpec v_2_5 (71315ff)
+- PDF Extractor — Plan v_2_4 (Canonical) — acceptance: confidence == 1.0 (binary match), rich `article_starts` objects; supersedes v_2_3
 
 ### Component Design Documents
 - BoundaryDetector v_1_1 (Canonical) — committed (71315ff)
@@ -218,7 +218,7 @@ Pipeline выполняется строго последовательно:
 ## 11. CHANGELOG
 
 ### v_2_8 — 2026-01-22
-- **Documentation alignment completed:** TechSpec v_2_5, Plan v_2_3, BoundaryDetector v_1_1 all synchronized
+- **Documentation alignment completed:** TechSpec v_2_5, Plan v_2_3, BoundaryDetector v_1_1 all synchronized (Note: Canonical Plan is now v_2_4 to align acceptance invariants)
 - Audit exports infrastructure established (commit 34344ad):
   - `.claude/rules/audit_exports.md` — canonical policy for /export artifact handling
   - `.claude/skills/archive-exports/SKILL.md` — reusable archiving skill
@@ -241,7 +241,7 @@ Pipeline выполняется строго последовательно:
 - Status: All commits local-only (branch: feature/phase-2-core-autonomous, no push)
 
 ### v_2_7 — 2026-01-15
-- Синхронизация с Plan v_2_3: активная фаза обновлена до Phase 2.5
+- Синхронизация с Plan v_2_4: активная фаза обновлена до Phase 2.5
 - Унификация именования политик: "ArticleStartPolicy" → "ArticleStartDetection Policy v_1_0" (соответствие каноническому артефакту)
 - Удалена неоднозначность: политика уже формализована, пометка "Needs formalization" устранена
 - Дата документа синхронизирована с последним session closure log (2026-01-15)
@@ -258,5 +258,5 @@ Pipeline выполняется строго последовательно:
 ### v_2_4 — 2026-01-07
 - BoundaryDetector v_1_0 policy документ добавлен
 - MetadataExtractor v_1_0.1: bbox для DOI-anchors
-- Активная фаза: Plan v_2_3 — Шаг 2.4 BoundaryDetector
+- Активная фаза: Plan v_2_4 — Шаг 2.4 BoundaryDetector
 - ArticleStartPolicy v_1_0 подтверждена как canonical
