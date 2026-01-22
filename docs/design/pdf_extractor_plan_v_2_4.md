@@ -1,4 +1,4 @@
-# PDF Extractor — Plan v_2_3
+# PDF Extractor — Plan v_2_4
 
 **Статус:** Canonical (Self‑Contained)  
 **Дата:** 2025‑12‑28  
@@ -229,5 +229,5 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 
 ---
 
-**Plan v_2_3 зафиксирован как Canonical.**
+**Plan v_2_4 зафиксирован как Canonical.**
 
