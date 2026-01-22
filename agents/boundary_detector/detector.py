@@ -255,10 +255,12 @@ def _apply_duplicate_filter(candidates: List[Dict[str, Any]], anchors: List[Dict
     return filtered
 
 
-def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[int]:
+def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Detect article start pages using typography-based policy.
-    Returns sorted list of unique page numbers.
+    Returns list of article start objects with metadata.
+
+    Output format: [{start_page: int, confidence: float, signals: dict}, ...]
     """
     # Step 1: Extract typography candidates (PRIMARY SIGNAL)
     candidates = _extract_typography_candidates(anchors)
@@ -269,17 +271,32 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[int]:
     # Step 3: Apply RU/EN duplicate filter
     candidates = _apply_duplicate_filter(candidates, anchors)
 
-    # Step 4: Extract unique page numbers and sort
+    # Step 4: Build article_starts with rich metadata
     pages = sorted(set(cand["page"] for cand in candidates))
 
-    return pages
+    article_starts = []
+    for page_num in pages:
+        article_starts.append({
+            "start_page": page_num,
+            "confidence": 1.0,  # Typography detection is deterministic (binary match)
+            "signals": {
+                "primary": "typography_descriptor",
+                "font_name": POLICY.primary_font_name,
+                "font_size": POLICY.primary_font_size,
+                "tolerance": POLICY.primary_font_size_tolerance,
+                "blacklist": list(POLICY.blacklist),
+                "ru_en_dedup_policy": "enabled" if POLICY.duplicate_filter_enabled else "disabled",
+            }
+        })
+
+    return article_starts
 
 
-def _generate_boundary_ranges(article_starts: List[int], total_pages: int) -> List[Dict[str, Any]]:
+def _generate_boundary_ranges(article_starts: List[Dict[str, Any]], total_pages: int) -> List[Dict[str, Any]]:
     """
-    Generate boundary ranges from article start pages.
+    Generate boundary ranges from article start objects.
     Each range: {id, from, to}
-    - id: sequential 1..N
+    - id: sequential 1..N (a01, a02, ...)
     - from: start page (inclusive, 1-indexed)
     - to: end page (inclusive, 1-indexed)
     - Last range ends at total_pages
@@ -287,16 +304,25 @@ def _generate_boundary_ranges(article_starts: List[int], total_pages: int) -> Li
     if not article_starts:
         return []
 
+    # Defensive validation: ensure correct format
+    for i, entry in enumerate(article_starts):
+        if not isinstance(entry, dict):
+            raise ValueError(f"Invalid article_starts[{i}]: expected dict, got {type(entry).__name__}")
+        if "start_page" not in entry:
+            raise ValueError(f"Invalid article_starts[{i}]: missing 'start_page' field")
+        if not isinstance(entry["start_page"], int) or entry["start_page"] < 1:
+            raise ValueError(f"Invalid article_starts[{i}]: start_page must be int >= 1, got {entry['start_page']}")
+
     ranges = []
 
-    for i, start in enumerate(article_starts):
+    for i, entry in enumerate(article_starts):
         article_id = i + 1
-        from_page = start
+        from_page = entry["start_page"]  # Extract int from Dict
 
         # Determine end page
         if i + 1 < len(article_starts):
             # End is the page before next article start
-            to_page = article_starts[i + 1] - 1
+            to_page = article_starts[i + 1]["start_page"] - 1  # Extract from Dict
         else:
             # Last article ends at total_pages
             to_page = total_pages
