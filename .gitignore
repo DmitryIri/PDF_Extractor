@@ -31,4 +31,6 @@ conversation-*.txt
 # Allow tracking of normative JSON schemas and contracts
 !docs/
 !docs/**/*.json
+# Allow project-level Claude Code settings
+!.claude/settings.json
 _audit/
