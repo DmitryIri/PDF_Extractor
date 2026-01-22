@@ -7,6 +7,7 @@
 ---
 
 ## 2026-01-22
+- **GitHub remote configured (origin), sync deferred until Phase 2 completion**: GitHub repo `DmitryIri/PDF_Extractor` will be stitched/merged after Phase 2; current SoT remains `/opt/projects/pdf-extractor`.
 - **Audit exports infrastructure established** (commit 34344ad):
   - Создана `.claude/rules/audit_exports.md` — canonical policy для Claude Code /export artifacts
   - Создан `.claude/skills/archive-exports/SKILL.md` — reusable skill для архивации экспортов
