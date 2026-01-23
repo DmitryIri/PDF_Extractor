@@ -1,0 +1,266 @@
+{
+  "status": "success",
+  "component": "Splitter",
+  "version": "1.0.0",
+  "data": {
+    "issue_id": "mg_2025_12",
+    "pdf_path": "/srv/pdf-extractor/tmp/Mg_2025-12.pdf",
+    "output_dir": "/srv/pdf-extractor/tmp/articles",
+    "total_articles": 28,
+    "article_pdfs": [
+      {
+        "id": "a01",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a01.pdf",
+        "from_page": 5,
+        "to_page": 5,
+        "page_count": 1,
+        "file_size_bytes": 133131,
+        "sha256": "f85cd7f004a547e05ea5f919e2357dd6af03ccc69a4dfed0192c2802578ef57a"
+      },
+      {
+        "id": "a02",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a02.pdf",
+        "from_page": 6,
+        "to_page": 15,
+        "page_count": 10,
+        "file_size_bytes": 949559,
+        "sha256": "4c6d8d5261ad18805ded0a0c060f477f72d4b62fbd54b28bfe0cdbcae677f0bf"
+      },
+      {
+        "id": "a03",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a03.pdf",
+        "from_page": 16,
+        "to_page": 27,
+        "page_count": 12,
+        "file_size_bytes": 657756,
+        "sha256": "84b84e1536c92f8ff900311c86e62e7f4d04c7c2d60ffcbc2259aabf26013456"
+      },
+      {
+        "id": "a04",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a04.pdf",
+        "from_page": 28,
+        "to_page": 33,
+        "page_count": 6,
+        "file_size_bytes": 913699,
+        "sha256": "6daf5eda9e654d6a3a06386381834a5dd448eba4e98979e5b196d7fd59b9a893"
+      },
+      {
+        "id": "a05",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a05.pdf",
+        "from_page": 34,
+        "to_page": 41,
+        "page_count": 8,
+        "file_size_bytes": 919379,
+        "sha256": "92b7acdb986438f18e4b5d2000176304179e52adf1a3d78624646ede1680f591"
+      },
+      {
+        "id": "a06",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a06.pdf",
+        "from_page": 42,
+        "to_page": 50,
+        "page_count": 9,
+        "file_size_bytes": 1329605,
+        "sha256": "cb260681a3e0e754875f8468d74afcf9d17037b6473bb891f33032b2db917b1c"
+      },
+      {
+        "id": "a07",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a07.pdf",
+        "from_page": 51,
+        "to_page": 66,
+        "page_count": 16,
+        "file_size_bytes": 800899,
+        "sha256": "a939235b1a6d9fa73609fc5e1e0faff4f9f4a519271610e4edba2e959760f36d"
+      },
+      {
+        "id": "a08",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a08.pdf",
+        "from_page": 67,
+        "to_page": 73,
+        "page_count": 7,
+        "file_size_bytes": 394356,
+        "sha256": "28f347b60de995d77f3b8b88273328b5191a1885796da0eefafe26ae969a4ab1"
+      },
+      {
+        "id": "a09",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a09.pdf",
+        "from_page": 74,
+        "to_page": 79,
+        "page_count": 6,
+        "file_size_bytes": 496687,
+        "sha256": "c8d0ceb9533e9b43a38a031b5af2738047d67b2d7c385caa625e5bb69c90645d"
+      },
+      {
+        "id": "a10",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a10.pdf",
+        "from_page": 80,
+        "to_page": 87,
+        "page_count": 8,
+        "file_size_bytes": 182468,
+        "sha256": "98369e825c6246c3ea27bd6d0bf6ae8db714d608b43f0956efb9839fee774d38"
+      },
+      {
+        "id": "a11",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a11.pdf",
+        "from_page": 88,
+        "to_page": 96,
+        "page_count": 9,
+        "file_size_bytes": 343657,
+        "sha256": "337f12ca9a54cab3ba190e38f6bb0a1b326299d65e32379ce9bbc0f0e8143f5c"
+      },
+      {
+        "id": "a12",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a12.pdf",
+        "from_page": 97,
+        "to_page": 107,
+        "page_count": 11,
+        "file_size_bytes": 797059,
+        "sha256": "d7199c5112a4c220789679ed4db4863a9acf978ca04dfda33ff2300d0463b976"
+      },
+      {
+        "id": "a13",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a13.pdf",
+        "from_page": 108,
+        "to_page": 109,
+        "page_count": 2,
+        "file_size_bytes": 128064,
+        "sha256": "eda29f4dd845b06c520f764b3a7e311d799f8cf563351e02722ca965f37c0df3"
+      },
+      {
+        "id": "a14",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a14.pdf",
+        "from_page": 110,
+        "to_page": 112,
+        "page_count": 3,
+        "file_size_bytes": 131467,
+        "sha256": "a36a075d8159f895e65df59a489424c20119540f6c3c66ce17724afe9c55658e"
+      },
+      {
+        "id": "a15",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a15.pdf",
+        "from_page": 113,
+        "to_page": 115,
+        "page_count": 3,
+        "file_size_bytes": 204291,
+        "sha256": "6908a59535fb70016de403abd9887c0243f56fc6ebbbcc385c43b50cd317b470"
+      },
+      {
+        "id": "a16",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a16.pdf",
+        "from_page": 116,
+        "to_page": 118,
+        "page_count": 3,
+        "file_size_bytes": 133592,
+        "sha256": "14473dd360701ae6725dc7c7a627dff10a68d3e67347577e996755f2cac388ab"
+      },
+      {
+        "id": "a17",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a17.pdf",
+        "from_page": 119,
+        "to_page": 121,
+        "page_count": 3,
+        "file_size_bytes": 133335,
+        "sha256": "b1d7872b843479d93fa0cb7ee80ac594fdc0622a4f9fd10482bc3cd110ec5622"
+      },
+      {
+        "id": "a18",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a18.pdf",
+        "from_page": 122,
+        "to_page": 124,
+        "page_count": 3,
+        "file_size_bytes": 114760,
+        "sha256": "e370ff2dde71884129fcd9f2cac1579b102cff0bd4b4c8e53a24ec43387f332d"
+      },
+      {
+        "id": "a19",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a19.pdf",
+        "from_page": 125,
+        "to_page": 129,
+        "page_count": 5,
+        "file_size_bytes": 442815,
+        "sha256": "3cf19643fbd70aaf680dd7be04db40e5ecb4b8f51aa3c7707b95c64a9cbc3090"
+      },
+      {
+        "id": "a20",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a20.pdf",
+        "from_page": 130,
+        "to_page": 132,
+        "page_count": 3,
+        "file_size_bytes": 602768,
+        "sha256": "8f54e9fea77ec77017b518e7f084d45abfe73c774a3b481fa9ec47789dc50144"
+      },
+      {
+        "id": "a21",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a21.pdf",
+        "from_page": 133,
+        "to_page": 136,
+        "page_count": 4,
+        "file_size_bytes": 139767,
+        "sha256": "4782bb32b5f45618198501092ac95d798155334807e3a73b3bda54e3e0975464"
+      },
+      {
+        "id": "a22",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a22.pdf",
+        "from_page": 137,
+        "to_page": 139,
+        "page_count": 3,
+        "file_size_bytes": 175628,
+        "sha256": "03d2daccb51c718aa04bcf63d9569a1919b80757b65e67af61d4c4da4e62cc4a"
+      },
+      {
+        "id": "a23",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a23.pdf",
+        "from_page": 140,
+        "to_page": 142,
+        "page_count": 3,
+        "file_size_bytes": 132721,
+        "sha256": "5f68a5ee90574c2d7f731ec6911c657c82c535340a524f17a42ba1c01768cc2c"
+      },
+      {
+        "id": "a24",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a24.pdf",
+        "from_page": 143,
+        "to_page": 144,
+        "page_count": 2,
+        "file_size_bytes": 130240,
+        "sha256": "ad23b1fb2ad3e060bb7ae9e87c91b2a16b5d37d435147ebe8f14edd456732501"
+      },
+      {
+        "id": "a25",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a25.pdf",
+        "from_page": 145,
+        "to_page": 147,
+        "page_count": 3,
+        "file_size_bytes": 392886,
+        "sha256": "db2eb559a2d846eb96a2bf5098ef14fa915704e952a114fcdead7f194fe5f3a7"
+      },
+      {
+        "id": "a26",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a26.pdf",
+        "from_page": 148,
+        "to_page": 150,
+        "page_count": 3,
+        "file_size_bytes": 133773,
+        "sha256": "d5b90a40e15428286b85fbd361dc1567a4e685fd7c895f6f733f50e8125624e9"
+      },
+      {
+        "id": "a27",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a27.pdf",
+        "from_page": 151,
+        "to_page": 153,
+        "page_count": 3,
+        "file_size_bytes": 117222,
+        "sha256": "b703f72ea9c33ac21e0c9049a049bc80ab9c96efe105c1dbc1a547eab05e2efb"
+      },
+      {
+        "id": "a28",
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a28.pdf",
+        "from_page": 154,
+        "to_page": 156,
+        "page_count": 3,
+        "file_size_bytes": 135283,
+        "sha256": "7d6fb9c5a12399d520ebf3c75fec5548617a5d545f7693bc97fba13b3c825c6d"
+      }
+    ]
+  },
+  "error": null
+}
