@@ -55,7 +55,7 @@
   - Canonical KEEP list: TechSpec v_2_5, Plan v_2_4, BoundaryDetector v_1_1
 - **Phase 2.6 Splitter completed (Plan v_2_4 §5.6, Шаг 2.5: lines 157-169)** (commits 3bbf4a1, 93a69ec):
   - Physical PDF splitting by boundary ranges from BoundaryDetector
-  - Canonical PDF: `/srv/pdf-extractor/tmp/Mg_2025-12.pdf` (8.0 MB)
+  - Canonical PDF: `/srv/pdf-extractor/tmp/Mg_2025-12.pdf` (~8.3 MB; 8345036 bytes)
   - Article PDFs created: 28 (pages 5-156)
   - Determinism verified: SHA256 hashes stable across 2 independent runs
   - Verifier script: `scripts/verify_splitter_golden.py` — validates PDFs against golden boundaries
