@@ -35,6 +35,26 @@
 - **Project Summary pointers updated to Plan v_2_4** (commit c2ee87c):
   - `project_summary_v_2_8.md` теперь указывает Canonical Plan = v_2_4
 
+## 2026-01-23
+- **Phase 2.5 BoundaryDetector completed** (commit cf75aa9):
+  - Golden test artifacts committed: `mg_2025_12_anchors.json` (18,184 anchors), `mg_2025_12_boundaries.json` (28 article_starts + boundary_ranges), `mg_2025_12_article_starts.json` (canonical reference)
+  - Verifier script added: `scripts/verify_boundary_detector_golden.py` — validates article_starts against golden reference, checks confidence == 1.0, verifies boundary_ranges invariants
+  - Determinism proven: 2 runs → identical output (10,507 bytes)
+- **MetadataExtractor stdout/stderr contract fix** (commit cbc625c):
+  - Changed JSON emission to use `os.write(1, json_bytes)` for explicit fd1 output per TechSpec v_2_5
+  - Fixes contract violation where JSON was emitted to stderr
+  - Tested: anchors.json 5,049,995 bytes (18,184 anchors, 156 pages), stderr 0 bytes, exit_code 0
+- **.gitignore exception for golden_tests JSON** (commit bd169c6):
+  - Added `!golden_tests/**/*.json` exception to allow tracking golden test artifacts
+  - Prevents accidental tracking of runtime artifacts while enabling canonical references
+- **docs/design hygiene completed** (commit 28d168d):
+  - Archived non-canonical design artifacts (git mv, history preserved):
+    - `pdf_extractor_techspec_v_2_4.md` → `docs/_archive/techspec/` (superseded by v_2_5)
+    - `pdf_extractor_boundary_detector_v_1_0.md` → `docs/_archive/design/` (superseded by v_1_1)
+  - Updated references: CLAUDE.md primary documentation pointer (v_2_4 → v_2_5), boundary_detector_v_1_1.md previous version link
+  - Canonical KEEP list: TechSpec v_2_5, Plan v_2_4, BoundaryDetector v_1_1
+- **Status**: Все коммиты local-only (branch: feature/phase-2-core-autonomous), push не выполнялся
+
 ## 2026-01-14
 - Инициализирован `project_history_log.md` как канонический State-артефакт.
 - Зафиксирован и размещён канонический `PROJECT_FILES_INDEX v_1_2`.
