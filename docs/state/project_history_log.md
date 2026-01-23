@@ -53,6 +53,14 @@
     - `pdf_extractor_boundary_detector_v_1_0.md` → `docs/_archive/design/` (superseded by v_1_1)
   - Updated references: CLAUDE.md primary documentation pointer (v_2_4 → v_2_5), boundary_detector_v_1_1.md previous version link
   - Canonical KEEP list: TechSpec v_2_5, Plan v_2_4, BoundaryDetector v_1_1
+- **Phase 2.6 Splitter completed (Plan v_2_4 §5.6, Шаг 2.5: lines 157-169)** (commits 3bbf4a1, 93a69ec):
+  - Physical PDF splitting by boundary ranges from BoundaryDetector
+  - Canonical PDF: `/srv/pdf-extractor/tmp/Mg_2025-12.pdf` (8.0 MB)
+  - Article PDFs created: 28 (pages 5-156)
+  - Determinism verified: SHA256 hashes stable across 2 independent runs
+  - Verifier script: `scripts/verify_splitter_golden.py` — validates PDFs against golden boundaries
+  - Golden artifact: `golden_tests/mg_2025_12_splitter_output.json` (8,765 bytes)
+  - Export archived: `_audit/claude_code/exports/2026_01_23__10_15_32/2026-01-23-bootstrap-only-do-not-run-any-long-commands.txt` (SHA256: 7a8eb86a7221bab6125832fd5cd53131da82eae03ccbd79bc607fa91d25a8074)
 - **Status**: Все коммиты local-only (branch: feature/phase-2-core-autonomous), push не выполнялся
 
 ## 2026-01-14
