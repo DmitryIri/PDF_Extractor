@@ -404,7 +404,7 @@ BoundaryDetector v_1_0 не делает:
 
 Документ **BoundaryDetector v_1_1** является каноническим.
 
-**Предыдущая версия:** [BoundaryDetector v_1_0](./pdf_extractor_boundary_detector_v_1_0.md)
+**Предыдущая версия:** [BoundaryDetector v_1_0](../_archive/design/pdf_extractor_boundary_detector_v_1_0.md)
 
 ### Изменения в v_1_1 (2026-01-22)
 
