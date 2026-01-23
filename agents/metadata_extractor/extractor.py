@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from typing import Any, Dict, List, Optional, Tuple
@@ -46,7 +47,8 @@ def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[
         "data": None,
         "error": {"exit_code": exit_code, "code": code, "message": message, "details": details or {}},
     }
-    sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
+    json_bytes = (json.dumps(out, ensure_ascii=False) + "\n").encode("utf-8")
+    os.write(1, json_bytes)
     raise SystemExit(exit_code)
 
 
@@ -392,7 +394,8 @@ def main() -> None:
         "data": {"issue_id": issue_id, "total_pages": total_pages, "anchors": anchors},
         "error": None,
     }
-    sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
+    json_bytes = (json.dumps(out, ensure_ascii=False) + "\n").encode("utf-8")
+    os.write(1, json_bytes)
 
 
 if __name__ == "__main__":
