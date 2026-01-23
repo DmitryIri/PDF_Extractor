@@ -31,6 +31,9 @@ conversation-*.txt
 # Allow tracking of normative JSON schemas and contracts
 !docs/
 !docs/**/*.json
+# Allow golden test artifacts
+!golden_tests/
+!golden_tests/**/*.json
 # Allow project-level Claude Code settings
 !.claude/settings.json
 _audit/
