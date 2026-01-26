@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 COMPONENT = "OutputBuilder"
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # Material-aware validation
 
 # Export root directory (canonical per project design)
 EXPORT_ROOT = Path("/srv/pdf-extractor/exports")
@@ -80,6 +80,59 @@ def _compute_sha256(file_path: Path) -> str:
     return sha256.hexdigest()
 
 
+def _validate_material_kind_filename(article: Dict[str, Any]) -> None:
+    """
+    Validate that material_kind matches expected_filename pattern.
+
+    Rules:
+    - contents → filename ends with _Contents.pdf
+    - editorial → filename ends with _Editorial.pdf
+    - digest → filename ends with _Digest.pdf
+    - research → filename does NOT end with service suffixes, must have surname
+    """
+    material_kind = article.get("material_kind")
+    expected_filename = article.get("expected_filename", "")
+    article_id = article.get("article_id", "unknown")
+
+    if not material_kind:
+        _error_exit(40, "build_failed",
+                    f"Article {article_id}: missing material_kind field")
+
+    # Service suffix patterns
+    service_suffixes = ["_Contents.pdf", "_Editorial.pdf", "_Digest.pdf"]
+
+    if material_kind == "contents":
+        if not expected_filename.endswith("_Contents.pdf"):
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: material_kind=contents but filename doesn't end with _Contents.pdf: {expected_filename}")
+
+    elif material_kind == "editorial":
+        if not expected_filename.endswith("_Editorial.pdf"):
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: material_kind=editorial but filename doesn't end with _Editorial.pdf: {expected_filename}")
+
+    elif material_kind == "digest":
+        if not expected_filename.endswith("_Digest.pdf"):
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: material_kind=digest but filename doesn't end with _Digest.pdf: {expected_filename}")
+
+    elif material_kind == "research":
+        # Research articles must NOT use service suffixes
+        for suffix in service_suffixes:
+            if expected_filename.endswith(suffix):
+                _error_exit(40, "build_failed",
+                            f"Article {article_id}: material_kind=research but filename uses service suffix {suffix}: {expected_filename}")
+
+        # Research must have first_author_surname
+        if "first_author_surname" not in article or not article["first_author_surname"]:
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: material_kind=research but missing first_author_surname")
+
+    else:
+        _error_exit(40, "build_failed",
+                    f"Article {article_id}: invalid material_kind '{material_kind}'")
+
+
 def _build_export_structure(
     journal_code: str,
     issue_prefix: str,
@@ -122,8 +175,12 @@ def _build_export_structure(
     checksums = []
 
     for article in articles:
+        # Validate material_kind matches filename pattern
+        _validate_material_kind_filename(article)
+
         article_id = article["article_id"]
         expected_filename = article["expected_filename"]
+        material_kind = article["material_kind"]
         splitter_output = article["splitter_output"]
         source_path = Path(splitter_output["path"])
 
@@ -174,15 +231,23 @@ def _build_export_structure(
         relative_path = dest_path.relative_to(export_tmp)
         final_relative_path = export_path / relative_path
 
-        exported_articles.append({
+        exported_article = {
             "article_id": article_id,
             "expected_filename": expected_filename,
+            "material_kind": material_kind,
             "export_path": str(final_relative_path),
             "bytes": dest_size,
             "sha256": dest_sha256,
             "from_page": article["from_page"],
             "to_page": article["to_page"]
-        })
+        }
+
+        # Add surname fields for research articles
+        if material_kind == "research":
+            exported_article["first_author_surname"] = article.get("first_author_surname")
+            exported_article["first_author_surname_source"] = article.get("first_author_surname_source")
+
+        exported_articles.append(exported_article)
 
         # Add to checksums list (SHA256SUMS format: {hash}  {filename})
         checksums.append(f"{dest_sha256}  articles/{expected_filename}")
