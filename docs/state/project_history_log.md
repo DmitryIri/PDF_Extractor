@@ -103,3 +103,34 @@
 - Документ доведён до Claude-ready состояния (физические пути + сценарий Claude Code Bootstrap).
 - Снят блокер для начала работы в Claude Code.
 
+Material Classification Implementation (2026-01-26)
+
+## Changes
+
+**Material Kind Taxonomy Added:**
+- contents: Multi-page table of contents
+- editorial: Editorial/foreword without extractable authors
+- research: Research articles with extractable first author
+- digest: Digest/summary materials (journal-specific)
+
+**Components Enhanced:**
+1. MetadataExtractor v1.3.0: Added en_authors, en_title, contents_marker anchors
+2. BoundaryDetector v1.1.0: Added material_kind classification to article_starts and boundary_ranges
+3. MetadataVerifier v1.1.0: Surname extraction (EN primary, RU+translit fallback) + material-aware validation
+4. OutputBuilder v1.1.0: Material-aware validation + service suffix enforcement
+
+**Naming Rules:**
+- contents → {IssuePrefix}_{PPP-PPP}_Contents.pdf
+- editorial → {IssuePrefix}_{PPP-PPP}_Editorial.pdf
+- digest → {IssuePrefix}_{PPP-PPP}_Digest.pdf
+- research → {IssuePrefix}_{PPP-PPP}_{Surname}.pdf
+
+**Surname Source Policy:**
+- Primary: en_authors anchor (EN metadata preferred)
+- Fallback: ru_authors anchor + GOST 7.79 System B transliteration
+- Fail-fast: exit 40 if neither available in window (from_page..from_page+1)
+
+**Reference:**
+- Manifest: docs/state/reference_inputs_manifest_mg_2025_12_v_1_0.json
+- GATE-0 Proof: GATE0_PROOF.md
+- Test: tests/test_material_classification_golden.sh
