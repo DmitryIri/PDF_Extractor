@@ -61,6 +61,40 @@
   - Verifier script: `scripts/verify_splitter_golden.py` — validates PDFs against golden boundaries
   - Golden artifact: `golden_tests/mg_2025_12_splitter_output.json` (8,765 bytes)
   - Export archived: `_audit/claude_code/exports/2026_01_23__10_15_32/2026-01-23-bootstrap-only-do-not-run-any-long-commands.txt` (SHA256: 7a8eb86a7221bab6125832fd5cd53131da82eae03ccbd79bc607fa91d25a8074)
+- **Phase 2.6 MetadataVerifier completed** (commit 6d67412):
+  - Manifest verification + enrichment для OutputBuilder readiness
+  - Validates: required fields, page ranges, file existence, naming rules
+  - Enriches: journal_code, issue_prefix, expected_filename, splitter_output metadata (sha256, bytes)
+  - Deterministic output: sort_keys, stable article ordering
+  - Test fixture: `tests/fixtures/metadata_verifier_input_minimal.json` (3 articles)
+- **Status**: Все коммиты local-only (branch: feature/phase-2-core-autonomous), push не выполнялся
+
+## 2026-01-26
+- **Phase 2.7 OutputBuilder completed (Plan v_2_4 §5.8, Шаг 2.7)**:
+  - Implemented `agents/output_builder/builder.py` (v_1_0.0)
+  - Stdin/stdout envelope contract per TechSpec v_2_5
+  - Atomic export: сборка в `{export_id}.tmp/` → atomic rename в `{export_id}/`
+  - Export structure: `/srv/pdf-extractor/exports/{JournalCode}/{YYYY}/{IssuePrefix}/exports/{export_id}/`
+    - `articles/` — Article PDFs с canonical naming: `{IssuePrefix}_{PPP-PPP}_{FirstAuthorSurname}.pdf`
+    - `manifest/export_manifest.json` — Export metadata (journal, issue, articles list, timestamps)
+    - `checksums.sha256` — SHA256 checksums для всех article PDFs (SHA256SUMS format)
+    - `README.md` — Human-readable export documentation с verification instructions
+  - Exit codes: 0=success, 10=invalid_input, 40=build_failed, 50=internal_error
+  - Naming rule enforcement: 3-digit zero-padded page numbers per session_closure_log_2026_01_23_v_1_2.md §3.1
+  - Deterministic export_id generation: `YYYY_MM_DD__HH_MM_SS` (UTC timestamp)
+- **OutputBuilder testing**:
+  - Unit tests: `tests/test_output_builder.sh` (5 тестов: 1 happy path + 4 negative)
+  - Test coverage: missing fields, invalid formats, non-existent source PDFs
+  - Integration test: MetadataVerifier → OutputBuilder pipeline успешен (3 статьи экспортированы)
+  - Checksums validated: `sha256sum -c checksums.sha256` → all OK
+- **Test fixtures**:
+  - Added `tests/fixtures/output_builder_input_minimal.json` (2 articles minimal example)
+- **Documentation updates**:
+  - Created Project Summary v_2_9 (from v_2_8)
+  - Updated project_history_log.md
+  - Documented decision D4: Canonical Export Structure (FS-only, no DB/UI)
+  - Documented known limitation Q1: source of `first_author_surname` (между Splitter и MetadataVerifier)
+- **Активная фаза:** Phase 2.7 → Phase 2.8 (OutputValidator next)
 - **Status**: Все коммиты local-only (branch: feature/phase-2-core-autonomous), push не выполнялся
 
 ## 2026-01-14
