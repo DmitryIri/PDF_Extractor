@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 import policy_v_1_0
 
 COMPONENT = "BoundaryDetector"
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # Added material_kind classification
 
 EXIT_SUCCESS = 0
 EXIT_INVALID_INPUT = 10
@@ -255,12 +255,61 @@ def _apply_duplicate_filter(candidates: List[Dict[str, Any]], anchors: List[Dict
     return filtered
 
 
+def _has_contents_marker(page: int, anchors: List[Dict[str, Any]], window: int = 2) -> bool:
+    """
+    Check if page (or nearby pages within window) has a contents_marker anchor.
+    Returns True if contents marker detected.
+    """
+    for anchor in anchors:
+        if anchor.get("type") == "contents_marker":
+            anchor_page = anchor.get("page")
+            if anchor_page and abs(anchor_page - page) <= window:
+                return True
+    return False
+
+
+def _has_extractable_authors(page: int, anchors: List[Dict[str, Any]], window: int = 1) -> bool:
+    """
+    Check if page (or page+window) has ru_authors or en_authors anchors.
+    Window allows checking next page for bilingual layout (RU on page N, EN on page N+1).
+    Returns True if authors found within window.
+    """
+    for anchor in anchors:
+        anchor_type = anchor.get("type")
+        if anchor_type in ("ru_authors", "en_authors"):
+            anchor_page = anchor.get("page")
+            if anchor_page and page <= anchor_page <= page + window:
+                return True
+    return False
+
+
+def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
+    """
+    Classify material_kind for an article start page.
+    Returns: "contents" | "editorial" | "research"
+
+    Rules:
+    - contents: page has contents_marker anchor (or nearby within window of 2)
+    - editorial: article start WITHOUT extractable authors in window (page..page+1)
+    - research: article start WITH extractable authors in window (page..page+1)
+    """
+    # Check for Contents marker
+    if _has_contents_marker(page, anchors, window=2):
+        return "contents"
+
+    # Check for authors (research vs editorial)
+    if _has_extractable_authors(page, anchors, window=1):
+        return "research"
+    else:
+        return "editorial"
+
+
 def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Detect article start pages using typography-based policy.
-    Returns list of article start objects with metadata.
+    Returns list of article start objects with metadata including material_kind.
 
-    Output format: [{start_page: int, confidence: float, signals: dict}, ...]
+    Output format: [{start_page: int, confidence: float, signals: dict, material_kind: str}, ...]
     """
     # Step 1: Extract typography candidates (PRIMARY SIGNAL)
     candidates = _extract_typography_candidates(anchors)
@@ -271,14 +320,17 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
     # Step 3: Apply RU/EN duplicate filter
     candidates = _apply_duplicate_filter(candidates, anchors)
 
-    # Step 4: Build article_starts with rich metadata
+    # Step 4: Build article_starts with rich metadata including material_kind
     pages = sorted(set(cand["page"] for cand in candidates))
 
     article_starts = []
     for page_num in pages:
+        material_kind = _classify_material_kind(page_num, anchors)
+
         article_starts.append({
             "start_page": page_num,
             "confidence": 1.0,  # Typography detection is deterministic (binary match)
+            "material_kind": material_kind,
             "signals": {
                 "primary": "typography_descriptor",
                 "font_name": POLICY.primary_font_name,
@@ -295,11 +347,16 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
 def _generate_boundary_ranges(article_starts: List[Dict[str, Any]], total_pages: int) -> List[Dict[str, Any]]:
     """
     Generate boundary ranges from article start objects.
-    Each range: {id, from, to}
+    Each range: {id, from, to, material_kind}
     - id: sequential 1..N (a01, a02, ...)
     - from: start page (inclusive, 1-indexed)
     - to: end page (inclusive, 1-indexed)
+    - material_kind: contents | editorial | research
     - Last range ends at total_pages
+
+    Special handling for Contents:
+    - If first article is Contents, extend from page 1 to page before next non-contents article
+    - This captures multi-page Contents sections (e.g., pages 1-4)
     """
     if not article_starts:
         return []
@@ -312,17 +369,24 @@ def _generate_boundary_ranges(article_starts: List[Dict[str, Any]], total_pages:
             raise ValueError(f"Invalid article_starts[{i}]: missing 'start_page' field")
         if not isinstance(entry["start_page"], int) or entry["start_page"] < 1:
             raise ValueError(f"Invalid article_starts[{i}]: start_page must be int >= 1, got {entry['start_page']}")
+        if "material_kind" not in entry:
+            raise ValueError(f"Invalid article_starts[{i}]: missing 'material_kind' field")
 
     ranges = []
 
     for i, entry in enumerate(article_starts):
         article_id = i + 1
-        from_page = entry["start_page"]  # Extract int from Dict
+        from_page = entry["start_page"]
+        material_kind = entry["material_kind"]
+
+        # Special handling: Contents range extends from page 1
+        if material_kind == "contents" and i == 0:
+            from_page = 1  # Contents starts from first page of issue
 
         # Determine end page
         if i + 1 < len(article_starts):
             # End is the page before next article start
-            to_page = article_starts[i + 1]["start_page"] - 1  # Extract from Dict
+            to_page = article_starts[i + 1]["start_page"] - 1
         else:
             # Last article ends at total_pages
             to_page = total_pages
@@ -331,6 +395,7 @@ def _generate_boundary_ranges(article_starts: List[Dict[str, Any]], total_pages:
             "id": f"a{article_id:02d}",
             "from": from_page,
             "to": to_page,
+            "material_kind": material_kind,
         })
 
     return ranges
