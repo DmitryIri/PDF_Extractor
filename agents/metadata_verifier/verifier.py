@@ -2,11 +2,20 @@
 # PDF Extractor — MetadataVerifier
 # Verify and enrich article manifest for OutputBuilder readiness.
 #
+# NEW in v1.1.0: Material-aware enrichment
+# - Accepts input from BoundaryDetector (with material_kind) + anchors
+# - For research articles: extracts first_author_surname from anchors
+#   - Primary source: en_authors (EN preferred)
+#   - Fallback source: ru_authors + transliteration
+#   - Fail-fast (exit 40) if neither available
+# - For contents/editorial/digest: no surname required (service suffixes)
+# - Adds first_author_surname_source and evidence fields for research
+#
 # Contract:
-# - stdin: JSON envelope (or raw) with article manifest
+# - stdin: JSON envelope (or raw) with boundary_ranges + anchors
 # - stdout (fd1): JSON envelope with VerifiedArticleManifest
 # - stderr (fd2): logs only, no JSON
-# - exit codes: 0=success, 10=invalid_input, 30=verification_failed, 50=internal_error
+# - exit codes: 0=success, 10=invalid_input, 30=verification_failed, 40=build_failed, 50=internal_error
 
 from __future__ import annotations
 
@@ -19,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 COMPONENT = "MetadataVerifier"
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # Material-aware enrichment + surname extraction
 
 
 def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
@@ -68,23 +77,160 @@ def _extract_journal_code(issue_prefix: str) -> str:
     return journal_code
 
 
-def _verify_and_enrich_article(
-    article: Dict[str, Any],
-    issue_prefix: str,
-    idx: int
-) -> Dict[str, Any]:
-    """Verify and enrich a single article entry."""
-    # Validate required input fields
-    required_fields = ["article_id", "from_page", "to_page", "first_author_surname", "path"]
-    for field in required_fields:
-        if field not in article:
-            _error_exit(10, "invalid_input", f"Article {idx}: missing required field '{field}'")
+# Transliteration map (RU → EN, simplified GOST 7.79-2000 System B)
+_TRANSLIT_MAP = {
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'E', 'Ж': 'Zh',
+    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
+    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts',
+    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+}
 
-    article_id = article["article_id"]
-    from_page = article["from_page"]
-    to_page = article["to_page"]
-    first_author_surname = article["first_author_surname"]
-    splitter_path = article["path"]
+
+def _transliterate_ru_to_en(text: str) -> str:
+    """Transliterate Russian text to Latin (simplified GOST 7.79 System B)."""
+    result = []
+    for char in text:
+        result.append(_TRANSLIT_MAP.get(char, char))
+    return ''.join(result)
+
+
+def _extract_first_surname(author_text: str, is_ru: bool = False) -> Optional[str]:
+    """
+    Extract first surname from author text.
+
+    Expected formats:
+    - EN: "Burykina Yu.S., Zharova O.P., ..." → "Burykina"
+    - RU: "Бурыкина Ю.С., Жарова О.П., ..." → "Бурыкина"
+
+    Returns first surname (before first comma or space+initials).
+    """
+    if not author_text:
+        return None
+
+    # Split by comma (multiple authors)
+    parts = author_text.split(',')
+    if not parts:
+        return None
+
+    first_author = parts[0].strip()
+    if not first_author:
+        return None
+
+    # Extract surname (first word before initials)
+    # Pattern: "Surname I.I." or "Surname"
+    words = first_author.split()
+    if not words:
+        return None
+
+    surname = words[0].strip()
+
+    # Remove trailing punctuation (dots, commas)
+    surname = surname.rstrip('.,;:')
+
+    return surname if surname else None
+
+
+def _find_anchor_in_window(
+    from_page: int,
+    to_page: int,
+    anchor_type: str,
+    anchors: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """
+    Find first anchor of given type within page window [from_page, to_page].
+    Returns anchor dict or None if not found.
+    """
+    for anchor in anchors:
+        if anchor.get("type") == anchor_type:
+            anchor_page = anchor.get("page")
+            if anchor_page and from_page <= anchor_page <= to_page:
+                return anchor
+    return None
+
+
+def _extract_surname_for_research(
+    from_page: int,
+    anchors: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Extract first_author_surname for research article.
+
+    Returns dict with:
+    - first_author_surname: str
+    - first_author_surname_source: "en_authors" | "ru_authors_translit"
+    - evidence: {anchor_type: str, anchor_page: int}
+
+    Raises SystemExit(40) if neither en_authors nor ru_authors found in window.
+    """
+    window_end = from_page + 1  # Check page and page+1
+
+    # PRIMARY: Try en_authors first
+    en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
+    if en_anchor:
+        author_text = en_anchor.get("text", "")
+        surname = _extract_first_surname(author_text, is_ru=False)
+        if surname:
+            return {
+                "first_author_surname": surname,
+                "first_author_surname_source": "en_authors",
+                "evidence": {
+                    "anchor_type": "en_authors",
+                    "anchor_page": en_anchor.get("page")
+                }
+            }
+
+    # FALLBACK: Try ru_authors + transliteration
+    ru_anchor = _find_anchor_in_window(from_page, window_end, "ru_authors", anchors)
+    if ru_anchor:
+        author_text = ru_anchor.get("text", "")
+        surname_ru = _extract_first_surname(author_text, is_ru=True)
+        if surname_ru:
+            surname_en = _transliterate_ru_to_en(surname_ru)
+            return {
+                "first_author_surname": surname_en,
+                "first_author_surname_source": "ru_authors_translit",
+                "evidence": {
+                    "anchor_type": "ru_authors",
+                    "anchor_page": ru_anchor.get("page")
+                }
+            }
+
+    # FAIL-FAST: Neither en_authors nor ru_authors found
+    _error_exit(
+        40,
+        "build_failed",
+        f"Research article starting at page {from_page}: no en_authors or ru_authors anchor found in window [{from_page}, {window_end}]"
+    )
+
+
+def _verify_and_enrich_boundary_range(
+    boundary_range: Dict[str, Any],
+    issue_prefix: str,
+    anchors: List[Dict[str, Any]],
+    splitter_output_dir: Path
+) -> Dict[str, Any]:
+    """
+    Verify and enrich a single boundary range with material-specific enrichment.
+
+    For research articles: extracts first_author_surname from anchors (EN primary, RU fallback)
+    For contents/editorial/digest: uses service suffixes (Contents, Editorial, Digest)
+
+    Returns enriched article dict ready for OutputBuilder.
+    """
+    # Validate required input fields from boundary_range
+    required_fields = ["id", "from", "to", "material_kind"]
+    for field in required_fields:
+        if field not in boundary_range:
+            _error_exit(10, "invalid_input", f"Boundary range missing required field '{field}': {boundary_range}")
+
+    article_id = boundary_range["id"]
+    from_page = boundary_range["from"]
+    to_page = boundary_range["to"]
+    material_kind = boundary_range["material_kind"]
 
     # Validate types
     if not isinstance(from_page, int) or not isinstance(to_page, int):
@@ -96,51 +242,74 @@ def _verify_and_enrich_article(
     if from_page > to_page:
         _error_exit(30, "verification_failed", f"Article {article_id}: from_page must be <= to_page")
 
-    if not isinstance(first_author_surname, str) or not first_author_surname:
-        _error_exit(10, "invalid_input", f"Article {article_id}: first_author_surname must be non-empty string")
-
-    # Sanitize surname
-    sanitized_surname = _sanitize_surname(first_author_surname)
-    if not sanitized_surname:
-        _error_exit(30, "verification_failed",
-                    f"Article {article_id}: first_author_surname '{first_author_surname}' is empty after sanitization")
+    if material_kind not in ("contents", "editorial", "research", "digest"):
+        _error_exit(10, "invalid_input", f"Article {article_id}: invalid material_kind '{material_kind}'")
 
     # Format page numbers as 3-digit zero-padded
     from_page_formatted = str(from_page).zfill(3)
     to_page_formatted = str(to_page).zfill(3)
 
-    # Build expected_filename: <IssuePrefix>_<PPP-PPP>_<Surname>.pdf
-    expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_{sanitized_surname}.pdf"
-
-    # Verify splitter_path exists
-    splitter_path_obj = Path(splitter_path)
-    if not splitter_path_obj.exists():
-        _error_exit(30, "verification_failed", f"Article {article_id}: splitter output file does not exist: {splitter_path}")
-
-    if not splitter_path_obj.is_file():
-        _error_exit(30, "verification_failed", f"Article {article_id}: splitter output path is not a file: {splitter_path}")
-
-    # Get file size
-    file_size = splitter_path_obj.stat().st_size
-    if file_size == 0:
-        _error_exit(30, "verification_failed", f"Article {article_id}: splitter output file has zero size")
-
-    # Compute SHA256
-    sha256_hash = _compute_sha256(splitter_path_obj)
-
-    # Build enriched article
+    # Material-specific enrichment
     enriched = {
         "article_id": article_id,
         "from_page": from_page,
         "to_page": to_page,
-        "first_author_surname": sanitized_surname,
-        "expected_filename": expected_filename,
-        "splitter_output": {
-            "path": str(splitter_path_obj),
+        "material_kind": material_kind
+    }
+
+    # Build expected_filename based on material_kind
+    if material_kind == "research":
+        # Extract surname from anchors
+        surname_data = _extract_surname_for_research(from_page, anchors)
+        surname = surname_data["first_author_surname"]
+        sanitized_surname = _sanitize_surname(surname)
+
+        if not sanitized_surname:
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: first_author_surname '{surname}' is empty after sanitization")
+
+        enriched["first_author_surname"] = sanitized_surname
+        enriched["first_author_surname_source"] = surname_data["first_author_surname_source"]
+        enriched["evidence"] = surname_data["evidence"]
+
+        expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_{sanitized_surname}.pdf"
+
+    elif material_kind == "contents":
+        expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Contents.pdf"
+
+    elif material_kind == "editorial":
+        expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Editorial.pdf"
+
+    elif material_kind == "digest":
+        expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Digest.pdf"
+
+    else:
+        _error_exit(50, "internal_error", f"Unhandled material_kind: {material_kind}")
+
+    enriched["expected_filename"] = expected_filename
+
+    # Verify splitter output file exists (if splitter_output_dir provided)
+    # Expected splitter output path: {splitter_output_dir}/{article_id}.pdf
+    if splitter_output_dir:
+        splitter_path = splitter_output_dir / f"{article_id}.pdf"
+
+        if not splitter_path.exists():
+            _error_exit(30, "verification_failed", f"Article {article_id}: splitter output file does not exist: {splitter_path}")
+
+        if not splitter_path.is_file():
+            _error_exit(30, "verification_failed", f"Article {article_id}: splitter output path is not a file: {splitter_path}")
+
+        file_size = splitter_path.stat().st_size
+        if file_size == 0:
+            _error_exit(30, "verification_failed", f"Article {article_id}: splitter output file has zero size")
+
+        sha256_hash = _compute_sha256(splitter_path)
+
+        enriched["splitter_output"] = {
+            "path": str(splitter_path),
             "bytes": file_size,
             "sha256": sha256_hash
         }
-    }
 
     return enriched
 
@@ -152,48 +321,66 @@ def main() -> None:
     except Exception as e:
         _error_exit(10, "invalid_input", f"Invalid JSON on stdin: {e}")
 
-    # Unwrap envelope
+    # Unwrap envelope (accept output from BoundaryDetector)
     payload = raw.get("data", raw) if isinstance(raw, dict) else raw
 
     # Validate required top-level fields
     try:
         issue_id = payload.get("issue_id")
-        pdf_path = payload.get("pdf_path")
-        article_pdfs = payload.get("article_pdfs")
+        boundary_ranges = payload.get("boundary_ranges")
+        anchors = payload.get("anchors")
 
         if not issue_id:
             raise ValueError("issue_id is required")
-        if not pdf_path:
-            raise ValueError("pdf_path is required")
-        if article_pdfs is None:
-            raise ValueError("article_pdfs is required")
-        if not isinstance(article_pdfs, list):
-            raise ValueError("article_pdfs must be a list")
+        if boundary_ranges is None:
+            raise ValueError("boundary_ranges is required")
+        if not isinstance(boundary_ranges, list):
+            raise ValueError("boundary_ranges must be a list")
+        if anchors is None:
+            raise ValueError("anchors is required")
+        if not isinstance(anchors, list):
+            raise ValueError("anchors must be a list")
 
     except (KeyError, ValueError) as e:
         _error_exit(10, "invalid_input", str(e))
 
-    # Extract issue_prefix from pdf_path
-    pdf_path_obj = Path(pdf_path)
-    issue_prefix = pdf_path_obj.stem  # filename without extension
-
-    # Validate issue_prefix matches source PDF basename
+    # Extract issue_prefix from issue_id (e.g., "mg_2025_12" → "Mg_2025-12")
+    # For now, use issue_id directly if it matches pattern, or require explicit issue_prefix
+    issue_prefix = payload.get("issue_prefix")
     if not issue_prefix:
-        _error_exit(30, "verification_failed", "Cannot extract issue_prefix from pdf_path")
+        # Fallback: try to derive from issue_id (e.g., "mg_2025_12" → "Mg_2025-12")
+        # This is a simple heuristic; production should pass issue_prefix explicitly
+        parts = issue_id.split('_')
+        if len(parts) >= 3:
+            journal = parts[0].capitalize()
+            year = parts[1]
+            month = parts[2]
+            issue_prefix = f"{journal}_{year}-{month}"
+        else:
+            _error_exit(10, "invalid_input", f"Cannot derive issue_prefix from issue_id: {issue_id}")
 
     # Extract journal_code
     journal_code = _extract_journal_code(issue_prefix)
 
-    # Validate articles count > 0
-    if len(article_pdfs) == 0:
-        _error_exit(30, "verification_failed", "No articles in manifest (articles count must be > 0)")
+    # Validate boundary_ranges count > 0
+    if len(boundary_ranges) == 0:
+        _error_exit(30, "verification_failed", "No boundary_ranges in input (count must be > 0)")
 
-    # Verify and enrich each article (deterministic order by article_id)
-    articles_sorted = sorted(article_pdfs, key=lambda a: a.get("article_id", ""))
+    # Optional: splitter_output_dir (for verifying splitter output files)
+    splitter_output_dir_str = payload.get("splitter_output_dir")
+    splitter_output_dir = Path(splitter_output_dir_str) if splitter_output_dir_str else None
+
+    # Verify and enrich each boundary range (deterministic order by id)
+    ranges_sorted = sorted(boundary_ranges, key=lambda r: r.get("id", ""))
 
     verified_articles = []
-    for idx, article in enumerate(articles_sorted):
-        enriched = _verify_and_enrich_article(article, issue_prefix, idx)
+    for boundary_range in ranges_sorted:
+        enriched = _verify_and_enrich_boundary_range(
+            boundary_range,
+            issue_prefix,
+            anchors,
+            splitter_output_dir
+        )
         verified_articles.append(enriched)
 
     # Determine run_id (if present in payload, use it; otherwise derive from issue_id)
@@ -203,9 +390,6 @@ def main() -> None:
     verified_manifest = {
         "journal_code": journal_code,
         "issue_prefix": issue_prefix,
-        "source_pdf": {
-            "path": str(pdf_path)
-        },
         "run": {
             "run_id": run_id
         },
