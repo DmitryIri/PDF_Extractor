@@ -1,0 +1,270 @@
+{
+  "meta": {
+    "version": "1.0",
+    "issue_id": "mg_2025_12",
+    "source_directory": "_audit/reference_inputs/mg_2025_12_manual_canon",
+    "total_files": 29,
+    "description": "Canonical reference manifest for mg_2025_12 manual split"
+  },
+  "articles": [
+    {
+      "filename": "Mg_2025-12_001-004_Contents.pdf",
+      "from_page": 1,
+      "to_page": 4,
+      "material_kind": "contents",
+      "bytes": 78508,
+      "sha256": "fa3c8d1e721ef39762c186e311b7fcff9805d6e85f30d78d7748330629a90079"
+    },
+    {
+      "filename": "Mg_2025-12_005-005_Editorial.pdf",
+      "from_page": 5,
+      "to_page": 5,
+      "material_kind": "editorial",
+      "bytes": 129237,
+      "sha256": "9cb5cba9bc39fa8d49d839ece4944194c725c0e2f7835aa86c82aac4744f7bc7"
+    },
+    {
+      "filename": "Mg_2025-12_006-015_Andreeva.pdf",
+      "from_page": 6,
+      "to_page": 15,
+      "material_kind": "research",
+      "bytes": 920800,
+      "sha256": "b1f3204dd66d7a71003647ef44b0469c50b484725afe8515db69d0984035da68",
+      "first_author_surname": "Andreeva"
+    },
+    {
+      "filename": "Mg_2025-12_016-027_Burykina.pdf",
+      "from_page": 16,
+      "to_page": 27,
+      "material_kind": "research",
+      "bytes": 636454,
+      "sha256": "66c477b36935db91b706f88f25bad7c81ff0ed18e18136ab3810e2a0b9540958",
+      "first_author_surname": "Burykina"
+    },
+    {
+      "filename": "Mg_2025-12_028-033_Valiakhmetov.pdf",
+      "from_page": 28,
+      "to_page": 33,
+      "material_kind": "research",
+      "bytes": 889719,
+      "sha256": "4f8dbddbcea3a66a59e27f73480af1aa2bba12da4234f78900a77c65a09b5e9c",
+      "first_author_surname": "Valiakhmetov"
+    },
+    {
+      "filename": "Mg_2025-12_034-041_Kotelnikova.pdf",
+      "from_page": 34,
+      "to_page": 41,
+      "material_kind": "research",
+      "bytes": 896340,
+      "sha256": "5a46ad0dbe243ed30ce55cb608581c233815c456b862d59b3f12c5ee675db50b",
+      "first_author_surname": "Kotelnikova"
+    },
+    {
+      "filename": "Mg_2025-12_042-050_Chakova.pdf",
+      "from_page": 42,
+      "to_page": 50,
+      "material_kind": "research",
+      "bytes": 1306807,
+      "sha256": "6854a7c88ae20fbfe642987f691613e6dfc3508321dabf87786d47fbc5b67981",
+      "first_author_surname": "Chakova"
+    },
+    {
+      "filename": "Mg_2025-12_051-066_Gandaeva.pdf",
+      "from_page": 51,
+      "to_page": 66,
+      "material_kind": "research",
+      "bytes": 781342,
+      "sha256": "fb62f84101d3f60a630318214c247117964615c1c62d2d80552e6b0a89fbb6c4",
+      "first_author_surname": "Gandaeva"
+    },
+    {
+      "filename": "Mg_2025-12_067-073_Zaklyazminskaya.pdf",
+      "from_page": 67,
+      "to_page": 73,
+      "material_kind": "research",
+      "bytes": 372993,
+      "sha256": "f462677a3a1be3f9a7ebd6ddfab084c08d2cef5340d1f1f19728e5ea6b558485",
+      "first_author_surname": "Zaklyazminskaya"
+    },
+    {
+      "filename": "Mg_2025-12_074-079_Shipulina.pdf",
+      "from_page": 74,
+      "to_page": 79,
+      "material_kind": "research",
+      "bytes": 473814,
+      "sha256": "754d401fd7bf3d6a0d093b7f85f8b79ab3e5b4ddd74484f3086fff8e81465d4e",
+      "first_author_surname": "Shipulina"
+    },
+    {
+      "filename": "Mg_2025-12_080-087_Krivosheina.pdf",
+      "from_page": 80,
+      "to_page": 87,
+      "material_kind": "research",
+      "bytes": 160459,
+      "sha256": "0a2925264a38e3c132b314b04bf24f8e42a084f85b9eeb89675b6a9742e7fb53",
+      "first_author_surname": "Krivosheina"
+    },
+    {
+      "filename": "Mg_2025-12_088-096_Kurguzova.pdf",
+      "from_page": 88,
+      "to_page": 96,
+      "material_kind": "research",
+      "bytes": 321191,
+      "sha256": "566a1e7dae4847d08ce8c0820eb35d9e3ee1857fd224a23a179ef1a0fa5a9f02",
+      "first_author_surname": "Kurguzova"
+    },
+    {
+      "filename": "Mg_2025-12_097-107_Kurshakova.pdf",
+      "from_page": 97,
+      "to_page": 107,
+      "material_kind": "research",
+      "bytes": 776063,
+      "sha256": "887e628dbd6fe71c52c6e5c91dcf80822c9f45e6406fa7cd723b7a7b565e7e9a",
+      "first_author_surname": "Kurshakova"
+    },
+    {
+      "filename": "Mg_2025-12_108-109_Barysheva.pdf",
+      "from_page": 108,
+      "to_page": 109,
+      "material_kind": "research",
+      "bytes": 113442,
+      "sha256": "a5a60b00b7a5a82e09087d880f04901dd2c54e1593f67ca22ecf3c882926a28b",
+      "first_author_surname": "Barysheva"
+    },
+    {
+      "filename": "Mg_2025-12_110-112_Bragina.pdf",
+      "from_page": 110,
+      "to_page": 112,
+      "material_kind": "research",
+      "bytes": 116904,
+      "sha256": "c8d42c5e8267fb3b993446b713bc8e9fe487bb05c6bf1f3bb47e020fe752f8f6",
+      "first_author_surname": "Bragina"
+    },
+    {
+      "filename": "Mg_2025-12_113-115_Buyanovskaya.pdf",
+      "from_page": 113,
+      "to_page": 115,
+      "material_kind": "research",
+      "bytes": 188964,
+      "sha256": "ef7c5d57ed758d0fc54bab2b36bad1e75fc55c0f0789217d55827c73d18840be",
+      "first_author_surname": "Buyanovskaya"
+    },
+    {
+      "filename": "Mg_2025-12_116-118_Gladkova.pdf",
+      "from_page": 116,
+      "to_page": 118,
+      "material_kind": "research",
+      "bytes": 118849,
+      "sha256": "aa0837ce96603678cd74fe157f1c30cd8bb85b63b4c127aa776735bc754f0ae1",
+      "first_author_surname": "Gladkova"
+    },
+    {
+      "filename": "Mg_2025-12_119-121_Gumeniuk.pdf",
+      "from_page": 119,
+      "to_page": 121,
+      "material_kind": "research",
+      "bytes": 119023,
+      "sha256": "6a71a2061beaff14c9be0ccf338231750e6462b3b57fb58bae1aa5cfae00afc7",
+      "first_author_surname": "Gumeniuk"
+    },
+    {
+      "filename": "Mg_2025-12_122-124_Gurinova.pdf",
+      "from_page": 122,
+      "to_page": 124,
+      "material_kind": "research",
+      "bytes": 101591,
+      "sha256": "dc142648bbcdb496eb065a81b11e03ff230de3ca416e43acdd29443e13c65e3e",
+      "first_author_surname": "Gurinova"
+    },
+    {
+      "filename": "Mg_2025-12_125-129_Kadyshev.pdf",
+      "from_page": 125,
+      "to_page": 129,
+      "material_kind": "research",
+      "bytes": 426181,
+      "sha256": "b1d7880f0317b9bd99695fcf3304fc71e6ef953487999740719556ec8aa91224",
+      "first_author_surname": "Kadyshev"
+    },
+    {
+      "filename": "Mg_2025-12_130-132_Lapshina.pdf",
+      "from_page": 130,
+      "to_page": 132,
+      "material_kind": "research",
+      "bytes": 587179,
+      "sha256": "66d1ad11e1b15f0b3c7fbd703d4b6a2d6d2cf7c492dcf75993df3d104de56f4f",
+      "first_author_surname": "Lapshina"
+    },
+    {
+      "filename": "Mg_2025-12_133-136_Murtazaliyeva.pdf",
+      "from_page": 133,
+      "to_page": 136,
+      "material_kind": "research",
+      "bytes": 125610,
+      "sha256": "408e73fee552ada54112f2edb1dfd470f21a3155edd4b8c90d6183ecc241313d",
+      "first_author_surname": "Murtazaliyeva"
+    },
+    {
+      "filename": "Mg_2025-12_137-139_Padyukova.pdf",
+      "from_page": 137,
+      "to_page": 139,
+      "material_kind": "research",
+      "bytes": 162511,
+      "sha256": "d7228849844c70b3e443d3d22dcc6a918862a2e67d425bff03904148083a8402",
+      "first_author_surname": "Padyukova"
+    },
+    {
+      "filename": "Mg_2025-12_140-142_Pchelina.pdf",
+      "from_page": 140,
+      "to_page": 142,
+      "material_kind": "research",
+      "bytes": 120771,
+      "sha256": "14fc723a0ada4476d750b0290afc123b1fc8b94abdbd2edb01a4dc7e9caeb777",
+      "first_author_surname": "Pchelina"
+    },
+    {
+      "filename": "Mg_2025-12_143-144_Semenova.pdf",
+      "from_page": 143,
+      "to_page": 144,
+      "material_kind": "research",
+      "bytes": 115435,
+      "sha256": "e5d24bf40e8d1766e2983511c29f9b478813713e9bfee70ada31b2f460dc2eaf",
+      "first_author_surname": "Semenova"
+    },
+    {
+      "filename": "Mg_2025-12_145-147_Slepzof.pdf",
+      "from_page": 145,
+      "to_page": 147,
+      "material_kind": "research",
+      "bytes": 377947,
+      "sha256": "949002479bbfcfca7401627930127e2d9f07feb9b9d12042afded821b2ad26ea",
+      "first_author_surname": "Slepzof"
+    },
+    {
+      "filename": "Mg_2025-12_148-150_Udina.pdf",
+      "from_page": 148,
+      "to_page": 150,
+      "material_kind": "research",
+      "bytes": 119314,
+      "sha256": "79991ac58070a187db121295a212180a4b0a755417d564b15e1b0b8c995f2bcb",
+      "first_author_surname": "Udina"
+    },
+    {
+      "filename": "Mg_2025-12_151-153_Tsyganov.pdf",
+      "from_page": 151,
+      "to_page": 153,
+      "material_kind": "research",
+      "bytes": 118867,
+      "sha256": "85ee3660aba71c79206aee75f66cabe8a44973a064b4278d6e1436231fd583cb",
+      "first_author_surname": "Tsyganov"
+    },
+    {
+      "filename": "Mg_2025-12_154-156_Fedoseeva.pdf",
+      "from_page": 154,
+      "to_page": 156,
+      "material_kind": "research",
+      "bytes": 121123,
+      "sha256": "e240cbc1b3c6082ffb55b8a82c3bf68e66894dbb069308e2b7637b5a5c837042",
+      "first_author_surname": "Fedoseeva"
+    }
+  ]
+}
