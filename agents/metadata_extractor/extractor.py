@@ -5,7 +5,10 @@
 # - emits text_block anchors (text+lang+bbox+font_size+font_name)
 # - emits required RU blocks (ru_title, ru_authors, ru_affiliations, ru_address, ru_abstract)
 #   strictly per docs/policies/ru_blocks_extraction_policy_v_1_0.md
+# - emits EN blocks (en_title, en_authors) for bilingual support
+# - emits contents_marker for Contents section detection
 #
+# v1.3.0: Added en_authors, en_title, contents_marker for material classification
 # v1.2.0: Added font_name to text_block anchors for typography-based BoundaryDetector.
 # IMPORTANT: any change to RU block rules must be done by releasing a new policy version.
 
@@ -21,16 +24,23 @@ import fitz  # PyMuPDF
 
 
 COMPONENT = "MetadataExtractor"
-VERSION = "1.2.0"  # Added font_name to text_block anchors for typography-based detection
+VERSION = "1.3.0"  # Added en_authors, en_title, contents_marker for material classification
 
 # Canonical DOI regex (case-insensitive)
 DOI_REGEX = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b", re.IGNORECASE)
 
 # Policy regexes (deterministic; must match policy text)
+# RU patterns
 AUTH_INITIALS_RE = re.compile(r"\b[А-ЯЁ]\.\s?[А-ЯЁ]\.", re.IGNORECASE)
 AFFILIATIONS_RE = re.compile(r"университет|институт|больниц|центр|кафедр|факультет|академ", re.IGNORECASE)
 ADDRESS_RE = re.compile(r"\bг\.\s|ул\.\s|пр\.\s|д\.\s|Россия|РФ|Москва|Санкт-Петербург", re.IGNORECASE)
 ABSTRACT_MARKER_RE = re.compile(r"^\s*Аннотация\b[:\s]*", re.IGNORECASE)
+
+# EN patterns (parallel to RU)
+EN_AUTH_INITIALS_RE = re.compile(r"\b[A-Z]\.\s?[A-Z]\.", re.IGNORECASE)
+
+# Contents marker pattern (case-insensitive, matches both Cyrillic and Latin)
+CONTENTS_MARKER_RE = re.compile(r"\b(содержание|contents)\b", re.IGNORECASE)
 
 # Policy constants
 MERGE_FONT_EPS = 0.5
@@ -352,6 +362,164 @@ def _emit_ru_required_anchors(doc: fitz.Document, text_blocks: List[Dict[str, An
     return out
 
 
+# ---- EN blocks (parallel to RU for bilingual support) ----
+
+def _group_en_candidates_on_page(text_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Group EN text_blocks on same page (parallel to RU grouping logic).
+    Merge neighboring en text_blocks when:
+    - lang == en for both
+    - abs(font_size_1 - font_size_2) <= 0.5
+    - abs(y0_next - y1_prev) <= 6.0
+    """
+    en = [a for a in text_blocks if a.get("lang") == "en" and a.get("type") == "text_block"]
+    en.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
+
+    merged: List[Dict[str, Any]] = []
+    for a in en:
+        if not merged:
+            merged.append(
+                {
+                    "page": a["page"],
+                    "text": a["text"],
+                    "lang": "en",
+                    "bbox": list(a["bbox"]),
+                    "font_size": float(a["font_size"]),
+                }
+            )
+            continue
+
+        prev = merged[-1]
+        fs1 = float(prev["font_size"])
+        fs2 = float(a["font_size"])
+        y0_next = float(a["bbox"][1])
+        y1_prev = float(prev["bbox"][3])
+
+        if abs(fs1 - fs2) <= MERGE_FONT_EPS and abs(y0_next - y1_prev) <= MERGE_Y_GAP:
+            # merge
+            prev["text"] = _norm_text(prev["text"] + " " + a["text"])
+            prev["bbox"][0] = min(float(prev["bbox"][0]), float(a["bbox"][0]))
+            prev["bbox"][1] = min(float(prev["bbox"][1]), float(a["bbox"][1]))
+            prev["bbox"][2] = max(float(prev["bbox"][2]), float(a["bbox"][2]))
+            prev["bbox"][3] = max(float(prev["bbox"][3]), float(a["bbox"][3]))
+        else:
+            merged.append(
+                {
+                    "page": a["page"],
+                    "text": a["text"],
+                    "lang": "en",
+                    "bbox": list(a["bbox"]),
+                    "font_size": float(a["font_size"]),
+                }
+            )
+    return merged
+
+
+def _pick_en_title(page_candidates: List[Dict[str, Any]], page_height: float) -> Optional[Dict[str, Any]]:
+    """EN title detection (parallel to RU title logic)."""
+    top_th = page_height * TOP_REGION_FRAC
+    eligible = []
+    for c in page_candidates:
+        y0, y1 = float(c["bbox"][1]), float(c["bbox"][3])
+        y_mid = (y0 + y1) / 2.0
+        if y_mid <= top_th and len(_norm_text(c["text"])) >= 10:
+            eligible.append(c)
+    if not eligible:
+        return None
+    max_fs = max(float(c["font_size"]) for c in eligible)
+    # deterministic tie-break: smallest y0, then x0
+    best = [c for c in eligible if float(c["font_size"]) == max_fs]
+    best.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
+    return best[0]
+
+
+def _pick_en_authors(page_candidates: List[Dict[str, Any]], en_title: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """EN authors detection: first en-candidate after title matching comma or initials (Surname I.I.,)."""
+    y0_title = float(en_title["bbox"][1])
+    after = [c for c in page_candidates if float(c["bbox"][1]) >= y0_title]
+    after.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
+    for c in after:
+        t = c["text"]
+        # EN author pattern: contains comma AND has initials like "I.I." or length >= 5
+        if len(t) >= 5 and ("," in t or EN_AUTH_INITIALS_RE.search(t)):
+            return c
+    return None
+
+
+def _emit_en_blocks(doc: fitz.Document, text_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Extract EN title and authors anchors (parallel to RU blocks)."""
+    by_page: Dict[int, List[Dict[str, Any]]] = {}
+    for a in text_blocks:
+        if a.get("type") != "text_block":
+            continue
+        p = int(a["page"])
+        by_page.setdefault(p, []).append(a)
+
+    out: List[Dict[str, Any]] = []
+
+    for pno in range(1, doc.page_count + 1):
+        page = doc.load_page(pno - 1)
+        page_h = float(page.rect.height)
+        page_blocks = by_page.get(pno, [])
+        if not page_blocks:
+            continue
+
+        candidates = _group_en_candidates_on_page(page_blocks)
+        if not candidates:
+            continue
+
+        en_title = _pick_en_title(candidates, page_h)
+        if en_title:
+            out.append(
+                {
+                    "page": pno,
+                    "type": "en_title",
+                    "text": _norm_text(en_title["text"]),
+                    "lang": "en",
+                    "bbox": [float(x) for x in en_title["bbox"]],
+                    "confidence": 0.90,
+                }
+            )
+
+            en_authors = _pick_en_authors(candidates, en_title)
+            if en_authors:
+                out.append(
+                    {
+                        "page": pno,
+                        "type": "en_authors",
+                        "text": _norm_text(en_authors["text"]),
+                        "lang": "en",
+                        "bbox": [float(x) for x in en_authors["bbox"]],
+                        "confidence": 0.90,
+                    }
+                )
+
+    return out
+
+
+def _extract_contents_marker(text_blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Extract contents_marker anchors.
+    Trigger: text_block contains "СONTENTS" or "содержание" (case-insensitive).
+    """
+    out: List[Dict[str, Any]] = []
+    for a in text_blocks:
+        if a.get("type") != "text_block":
+            continue
+        text = a.get("text", "")
+        if CONTENTS_MARKER_RE.search(text):
+            out.append(
+                {
+                    "page": a["page"],
+                    "type": "contents_marker",
+                    "text": _norm_text(text),
+                    "bbox": list(a["bbox"]),
+                    "confidence": 0.95,
+                }
+            )
+    return out
+
+
 def main() -> None:
     try:
         raw = sys.stdin.read()
@@ -379,6 +547,8 @@ def main() -> None:
         doi_anchors = _extract_doi_anchors(doc)
         text_blocks = _extract_text_blocks(doc)
         ru_required = _emit_ru_required_anchors(doc, text_blocks)
+        en_blocks = _emit_en_blocks(doc, text_blocks)
+        contents_markers = _extract_contents_marker(text_blocks)
     except Exception as e:
         _error_exit(20, "anchor_extraction_failed", f"anchor_extraction_failed: {e}", {"exception": str(e)})
 
@@ -386,6 +556,8 @@ def main() -> None:
     anchors.extend(doi_anchors)
     anchors.extend(text_blocks)
     anchors.extend(ru_required)
+    anchors.extend(en_blocks)
+    anchors.extend(contents_markers)
 
     out = {
         "status": "success",
