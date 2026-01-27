@@ -1,4 +1,10 @@
 #!/bin/bash
+VENV_PY="${VENV_PY:-/srv/pdf-extractor/venv/bin/python}"
+if [ ! -x "$VENV_PY" ]; then
+  echo "ERROR: VENV_PY '$VENV_PY' not found or not executable" >&2
+  exit 10
+fi
+
 # PDF Extractor — Golden Test for Material Classification
 # Verifies exact filename match against reference canonical manifest
 #
@@ -112,17 +118,21 @@ echo "✓ Articles detected: $DETECTED_COUNT"
 # Note: In real pipeline, this would come from Splitter → MetadataVerifier
 # For filename generation, we only need boundary_ranges + anchors
 
+# Use temp file to avoid "argument list too long" error with large anchors JSON
+TEMP_ANCHORS=$(mktemp)
+echo "$ANCHORS_JSON" | jq '.data.anchors' > "$TEMP_ANCHORS"
 VERIFIER_INPUT=$(jq -n \
     --arg issue_id "mg_2025_12" \
     --arg issue_prefix "Mg_2025-12" \
     --argjson boundary_ranges "$BOUNDARY_RANGES" \
-    --argjson anchors "$(echo "$ANCHORS_JSON" | jq '.data.anchors')" \
+    --slurpfile anchors "$TEMP_ANCHORS" \
     '{
         issue_id: $issue_id,
         issue_prefix: $issue_prefix,
         boundary_ranges: $boundary_ranges,
-        anchors: $anchors
+        anchors: $anchors[0]
     }')
+rm -f "$TEMP_ANCHORS"
 
 # For filename generation without actual splitter files, we'll compute expected filenames directly
 # This mimics MetadataVerifier logic
@@ -152,14 +162,11 @@ for br in boundary_ranges:
     to_p = str(to_page).zfill(3)
 
     if material_kind == 'research':
-        try:
-            surname_data = _extract_surname_for_research(from_page, anchors)
-            surname = surname_data['first_author_surname']
-            sanitized = _sanitize_surname(surname)
-            filename = f'{issue_prefix}_{from_p}-{to_p}_{sanitized}.pdf'
-        except SystemExit:
-            # Fallback if no authors found
-            filename = f'{issue_prefix}_{from_p}-{to_p}_UNKNOWN.pdf'
+        # No try/except: fail-fast if surname extraction fails
+        surname_data = _extract_surname_for_research(from_page, anchors)
+        surname = surname_data['first_author_surname']
+        sanitized = _sanitize_surname(surname)
+        filename = f'{issue_prefix}_{from_p}-{to_p}_{sanitized}.pdf'
     elif material_kind == 'contents':
         filename = f'{issue_prefix}_{from_p}-{to_p}_Contents.pdf'
     elif material_kind == 'editorial':
@@ -254,7 +261,7 @@ for article_page in 16 67; do
         from_page=$(echo "$article_info" | jq -r '.from')
         to_page=$(echo "$article_info" | jq -r '.to')
 
-        # Extract surname data
+        # Extract surname data (fail-fast: no error suppression)
         surname_data=$(echo "$VERIFIER_INPUT" | python3 -c "
 import json
 import sys
@@ -266,11 +273,8 @@ from_page = $from_page
 sys.path.insert(0, '$PROJECT_ROOT/agents/metadata_verifier')
 from verifier import _extract_surname_for_research
 
-try:
-    surname_data = _extract_surname_for_research(from_page, anchors)
-    print(json.dumps(surname_data, ensure_ascii=False))
-except SystemExit:
-    print(json.dumps({'error': 'no_authors_found'}, ensure_ascii=False))
+surname_data = _extract_surname_for_research(from_page, anchors)
+print(json.dumps(surname_data, ensure_ascii=False))
 ")
 
         surname=$(echo "$surname_data" | jq -r '.first_author_surname // "N/A"')
