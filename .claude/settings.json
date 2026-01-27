@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ],
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(sha256sum:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(date:*)",
+      "Bash(echo:*)",
+      "Bash(pwd)"
+    ]
+  }
+}

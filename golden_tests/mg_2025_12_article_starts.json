@@ -1,0 +1,454 @@
+{
+  "article_starts": [
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 5
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 6
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 16
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 28
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 34
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 42
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 51
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 67
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 74
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 80
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 88
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 97
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 108
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 110
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 113
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 116
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 119
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 122
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 125
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 130
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 133
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 137
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 140
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 143
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 145
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 148
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 151
+    },
+    {
+      "confidence": 1.0,
+      "signals": {
+        "blacklist": [
+          "2025. том 24. номер 12",
+          "оригинальное исследование",
+          "краткое сообщение"
+        ],
+        "font_name": "MyriadPro-BoldIt",
+        "font_size": 12.0,
+        "primary": "typography_descriptor",
+        "ru_en_dedup_policy": "enabled",
+        "tolerance": 0.5
+      },
+      "start_page": 154
+    }
+  ],
+  "issue_id": "mg_2025_12",
+  "total_pages": 156
+}

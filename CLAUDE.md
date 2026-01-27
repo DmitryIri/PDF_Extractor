@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_4.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_5.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 
@@ -105,3 +105,23 @@ Article starts (BoundaryDetector output):
 ```json
 {"status": "success", "data": {"article_starts": [{start_page, confidence, signals: {...}}]}}
 ```
+
+## Versioning Gate (CRITICAL)
+
+**Rule:** Files with semantic version suffix pattern `*_v_<MAJOR>_<MINOR>.md` are **IMMUTABLE**.
+
+**Examples:**
+- `project_summary_v_2_6.md` — immutable
+- `techspec_v_2_5.md` — immutable
+- `policy_v_1_0.md` — immutable
+
+**To modify a versioned file:**
+1. **NEVER edit the existing file in-place**
+2. Create a new file with bumped version (e.g., `v_2_6` → `v_2_7`)
+3. Copy content from old version
+4. Apply changes to the new version
+5. Update version header and add CHANGELOG entry
+
+**If uncertain:** STOP and ask for confirmation before editing any file matching `*_v_*_*.md`.
+
+**Reference:** `docs/governance/versioning_policy.md` v_2_0, §1, Rule 3
