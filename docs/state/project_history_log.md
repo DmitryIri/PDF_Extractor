@@ -103,21 +103,58 @@
 - Документ доведён до Claude-ready состояния (физические пути + сценарий Claude Code Bootstrap).
 - Снят блокер для начала работы в Claude Code.
 
-Material Classification Implementation (2026-01-26)
+## Material Classification Implementation & RU-Journal Filename Policy (2026-01-26)
 
-## Changes
+**Session Context:** Four-phase implementation fixing filename generation for RU-journals (Mg_2025-12 issue)
 
-**Material Kind Taxonomy Added:**
+**Problem Identified:**
+- Forensic analysis revealed gene symbols (TPM1, LPL, rs1143634) appearing in filenames instead of author surnames
+- Root cause: en_authors anchors incorrectly extracted from gene symbols in EN metadata blocks
+- RU-journal policy violation: EN metadata was PRIMARY, RU metadata was FALLBACK (should be inverted)
+- Contents (pages 1-4) and Editorial (page 5) misclassified as research articles
+- Page 110-112: ru_title "Патогенетика..." leaked into ru_authors, causing wrong filename
+
+**Component Versions:**
+- MetadataExtractor: v1.3.0 → v1.3.1
+- BoundaryDetector: v1.1.0 → v1.2.0
+- MetadataVerifier: v1.1.0 → v1.2.0
+
+**Changes:**
+
+**1. MetadataVerifier v1.2.0 (filename_generation_policy_v_1_0 for RU-journals):**
+- **Inverted priority:** ru_authors PRIMARY, en_authors FALLBACK (with validation)
+- **Gene/rsID filtering:** Added _validate_surname_en() to reject:
+  - rsID patterns (rs\d+)
+  - Biological notation (parentheses)
+  - All-caps short words (≤8 chars, likely gene symbols)
+  - Strings with digits
+- **Transliteration hierarchy:**
+  1. Author's own transliteration (from en_authors on same page as ru_authors)
+  2. GOST 7.79-2000 System B with context rules ("ие"→"iye", "ню"→"niu")
+- **Evidence tracking:** Added first_author_surname_source field:
+  - ru_authors_author_translit (author's own)
+  - ru_authors_translit (GOST mechanical)
+  - en_authors_validated (EN-only fallback)
+
+**2. BoundaryDetector v1.2.0 (Contents/Editorial detection):**
+- **Front-matter detection:** Added _detect_contents_on_first_pages() for special-case Contents detection (max_page=4) using contents_marker anchor
+- **Editorial filtering:** Added _is_editorial_greeting() to filter editorial greetings/signatures:
+  - Short greetings (academic title + short phrase)
+  - Long signatures (>200 chars with academic titles)
+- **Editorial isolation:** Changed _classify_material_kind() to use window=0 (same page only) for editorial detection to prevent capturing next page's authors
+
+**3. MetadataExtractor v1.3.1 (ru_title/ru_authors separation):**
+- **Text-based exclusion:** Modified _pick_ru_authors() and _pick_en_authors() to skip candidates with same text as ru_title/en_title
+- **Semantic heuristic:** Added _is_likely_title_not_authors() to detect article titles vs author lists:
+  - Title indicators: ≥3 lowercase words, no initials pattern
+  - Author indicators: initials present + ≥2 commas
+- **Fail-fast:** No error suppression in surname extraction
+
+**Material Kind Taxonomy:**
 - contents: Multi-page table of contents
 - editorial: Editorial/foreword without extractable authors
 - research: Research articles with extractable first author
 - digest: Digest/summary materials (journal-specific)
-
-**Components Enhanced:**
-1. MetadataExtractor v1.3.0: Added en_authors, en_title, contents_marker anchors
-2. BoundaryDetector v1.1.0: Added material_kind classification to article_starts and boundary_ranges
-3. MetadataVerifier v1.1.0: Surname extraction (EN primary, RU+translit fallback) + material-aware validation
-4. OutputBuilder v1.1.0: Material-aware validation + service suffix enforcement
 
 **Naming Rules:**
 - contents → {IssuePrefix}_{PPP-PPP}_Contents.pdf
@@ -125,12 +162,17 @@ Material Classification Implementation (2026-01-26)
 - digest → {IssuePrefix}_{PPP-PPP}_Digest.pdf
 - research → {IssuePrefix}_{PPP-PPP}_{Surname}.pdf
 
-**Surname Source Policy:**
-- Primary: en_authors anchor (EN metadata preferred)
-- Fallback: ru_authors anchor + GOST 7.79 System B transliteration
-- Fail-fast: exit 40 if neither available in window (from_page..from_page+1)
+**Verification:**
+- Golden test: tests/test_material_classification_golden.sh
+- Result: ✅ EXACT MATCH on all 29 articles for Mg_2025-12
+- Reference: docs/state/reference_inputs_manifest_mg_2025_12_v_1_0.json
+- Key fixes verified:
+  - Mg_2025-12_001-004_Contents.pdf (material_kind=contents)
+  - Mg_2025-12_005-005_Editorial.pdf (material_kind=editorial)
+  - Mg_2025-12_016-027_Burykina.pdf (from ru_authors_author_translit)
+  - Mg_2025-12_067-073_Zaklyazminskaya.pdf (from ru_authors_translit)
+  - Mg_2025-12_110-112_Bragina.pdf (ru_title separation fixed)
 
-**Reference:**
-- Manifest: docs/state/reference_inputs_manifest_mg_2025_12_v_1_0.json
+**Documentation:**
+- Policy: docs/policies/filename_generation_policy_v_1_0.md (referenced in implementation)
 - GATE-0 Proof: GATE0_PROOF.md
-- Test: tests/test_material_classification_golden.sh

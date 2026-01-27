@@ -24,7 +24,7 @@ import fitz  # PyMuPDF
 
 
 COMPONENT = "MetadataExtractor"
-VERSION = "1.3.0"  # Added en_authors, en_title, contents_marker for material classification
+VERSION = "1.3.1"  # Fixed ru_title/en_title leaking into ru_authors/en_authors
 
 # Canonical DOI regex (case-insensitive)
 DOI_REGEX = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b", re.IGNORECASE)
@@ -241,14 +241,63 @@ def _pick_ru_abstract(page_candidates: List[Dict[str, Any]]) -> Optional[Dict[st
     return None
 
 
+def _is_likely_title_not_authors(text: str, is_ru: bool) -> bool:
+    """
+    Check if text looks like article title rather than authors list.
+
+    Article titles typically have:
+    - Long descriptive phrases
+    - Lowercase connecting words ("of", "and", "with", "в", "с")
+    - No author initials pattern
+
+    Author lists typically have:
+    - Initials (I.I. or А.Б.)
+    - Multiple comma-separated names (2+ commas)
+    - Shorter relative to word count
+
+    Returns True if text looks like title (should NOT be used as authors).
+    """
+    if is_ru:
+        # Check for RU initials pattern (А.Б.)
+        has_initials = bool(AUTH_INITIALS_RE.search(text))
+    else:
+        # Check for EN initials pattern (I.I.)
+        has_initials = bool(EN_AUTH_INITIALS_RE.search(text))
+
+    comma_count = text.count(',')
+    word_count = len(text.split())
+    lowercase_words = sum(1 for w in text.split() if w and w[0].islower())
+
+    # Strong author indicators (likely NOT title)
+    if has_initials and comma_count >= 2:
+        return False  # This is authors, not title
+
+    # Strong title indicators (should NOT be used as authors)
+    if lowercase_words >= 3 and not has_initials:
+        return True  # This is title, not authors
+
+    return False  # Ambiguous, allow through
+
+
 def _pick_ru_authors(page_candidates: List[Dict[str, Any]], ru_title: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     # Policy §7: first ru-candidate after title (by y0) matching comma or initials
+    # CRITICAL: exclude ru_title itself from candidates to prevent title from being picked as authors
     y0_title = float(ru_title["bbox"][1])
+    ru_title_text = ru_title.get("text", "")
+
     after = [c for c in page_candidates if float(c["bbox"][1]) >= y0_title]
     after.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
     for c in after:
+        # Skip if this is the same block as ru_title (same text)
+        if c.get("text") == ru_title_text:
+            continue
+
         t = c["text"]
         if len(t) >= 5 and ("," in t or AUTH_INITIALS_RE.search(t)):
+            # Additional check: skip if this looks like article title, not authors
+            if _is_likely_title_not_authors(t, is_ru=True):
+                continue
+
             return c
     return None
 
@@ -435,13 +484,24 @@ def _pick_en_title(page_candidates: List[Dict[str, Any]], page_height: float) ->
 
 def _pick_en_authors(page_candidates: List[Dict[str, Any]], en_title: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """EN authors detection: first en-candidate after title matching comma or initials (Surname I.I.,)."""
+    # CRITICAL: exclude en_title itself from candidates to prevent title from being picked as authors
     y0_title = float(en_title["bbox"][1])
+    en_title_text = en_title.get("text", "")
+
     after = [c for c in page_candidates if float(c["bbox"][1]) >= y0_title]
     after.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
     for c in after:
+        # Skip if this is the same block as en_title (same text)
+        if c.get("text") == en_title_text:
+            continue
+
         t = c["text"]
         # EN author pattern: contains comma AND has initials like "I.I." or length >= 5
         if len(t) >= 5 and ("," in t or EN_AUTH_INITIALS_RE.search(t)):
+            # Additional check: skip if this looks like article title, not authors
+            if _is_likely_title_not_authors(t, is_ru=False):
+                continue
+
             return c
     return None
 

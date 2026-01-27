@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 import policy_v_1_0
 
 COMPONENT = "BoundaryDetector"
-VERSION = "1.1.0"  # Added material_kind classification
+VERSION = "1.2.0"  # Fixed Contents/Editorial detection for front matter
 
 EXIT_SUCCESS = 0
 EXIT_INVALID_INPUT = 10
@@ -268,17 +268,81 @@ def _has_contents_marker(page: int, anchors: List[Dict[str, Any]], window: int =
     return False
 
 
+def _is_editorial_greeting(text: str) -> bool:
+    """
+    Check if author text is actually an editorial greeting/signature rather than author names.
+
+    Editorial greetings/signatures typically contain:
+    - "Уважаемые" (Dear), "С уважением" (Regards)
+    - "коллеги" (colleagues), "читатели" (readers)
+    - Academic titles: "доктор ... наук", "профессор", "заведующая"
+    - Very long text (> 200 chars) with institutional affiliations
+
+    Returns True if text looks like editorial content, not author names.
+    """
+    if not text:
+        return False
+
+    text_lower = text.lower()
+
+    # Strong indicators of editorial greeting/signature
+    editorial_markers = [
+        "уважаемые",  # Dear
+        "с уважением",  # Regards/Sincerely
+        "дорогие",    # Dear
+        "коллеги",    # colleagues
+        "читатели",   # readers
+        "авторы и читатели",  # authors and readers
+    ]
+
+    for marker in editorial_markers:
+        if marker in text_lower:
+            return True
+
+    # Editorial signatures with titles and long affiliations
+    editorial_titles = [
+        "доктор медицинских наук",  # MD/PhD
+        "доктор биологических наук",
+        "профессор кафедры",  # Professor of Department
+        "заведующая лабораторией",  # Head of Laboratory
+        "заведующий лабораторией",
+        "приглашенный редактор",  # Guest Editor
+    ]
+
+    for title in editorial_titles:
+        if title in text_lower:
+            return True
+
+    # Very long text (> 200 chars) likely editorial signature, not author list
+    if len(text) > 200:
+        return True
+
+    # Additional check: exclamation at end + addressing words
+    if text.strip().endswith("!") and any(word in text_lower for word in ["коллег", "читател", "автор"]):
+        return True
+
+    return False
+
+
 def _has_extractable_authors(page: int, anchors: List[Dict[str, Any]], window: int = 1) -> bool:
     """
     Check if page (or page+window) has ru_authors or en_authors anchors.
     Window allows checking next page for bilingual layout (RU on page N, EN on page N+1).
     Returns True if authors found within window.
+
+    Filters out editorial greetings that are misclassified as ru_authors.
     """
     for anchor in anchors:
         anchor_type = anchor.get("type")
         if anchor_type in ("ru_authors", "en_authors"):
             anchor_page = anchor.get("page")
             if anchor_page and page <= anchor_page <= page + window:
+                # Filter out editorial greetings
+                if anchor_type == "ru_authors":
+                    text = anchor.get("text", "")
+                    if _is_editorial_greeting(text):
+                        continue  # Skip this anchor, it's not real authors
+
                 return True
     return False
 
@@ -290,18 +354,54 @@ def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
 
     Rules:
     - contents: page has contents_marker anchor (or nearby within window of 2)
-    - editorial: article start WITHOUT extractable authors in window (page..page+1)
+    - editorial: article start WITHOUT extractable authors on same page (window=0)
     - research: article start WITH extractable authors in window (page..page+1)
+
+    Editorial detection:
+    - Check only the article start page itself (window=0)
+    - This prevents misclassifying Editorial when next page has research article authors
+    - Example: page 5 (Editorial) followed by page 6 (Research with authors)
     """
     # Check for Contents marker
     if _has_contents_marker(page, anchors, window=2):
         return "contents"
 
-    # Check for authors (research vs editorial)
-    if _has_extractable_authors(page, anchors, window=1):
+    # Check for authors on article start page only (editorial vs research)
+    # Use window=0 to check only the current page, avoiding false positives
+    # from subsequent research articles
+    if _has_extractable_authors(page, anchors, window=0):
         return "research"
     else:
         return "editorial"
+
+
+def _detect_contents_on_first_pages(anchors: List[Dict[str, Any]], max_page: int = 4) -> Optional[Dict[str, Any]]:
+    """
+    Special-case detection for Contents section on first pages (typically pages 1-4).
+
+    Contents sections often lack PRIMARY SIGNAL (MyriadPro-BoldIt typography) but have
+    contents_marker anchors. This function checks if any of the first pages (1..max_page)
+    have contents_marker, indicating a Contents section.
+
+    Returns article_start dict for Contents if detected, None otherwise.
+    """
+    for anchor in anchors:
+        if anchor.get("type") == "contents_marker":
+            anchor_page = anchor.get("page")
+            if anchor_page and 1 <= anchor_page <= max_page:
+                # Found Contents marker on first pages
+                # Use the page where marker was found as start_page
+                # (will be adjusted to page 1 by _generate_boundary_ranges)
+                return {
+                    "start_page": anchor_page,
+                    "confidence": 1.0,
+                    "material_kind": "contents",
+                    "signals": {
+                        "primary": "contents_marker_on_first_pages",
+                        "detection_method": "special_case_front_matter",
+                    }
+                }
+    return None
 
 
 def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -311,6 +411,14 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
     Output format: [{start_page: int, confidence: float, signals: dict, material_kind: str}, ...]
     """
+    article_starts = []
+
+    # Step 0: Special case - detect Contents on first pages (1-4)
+    # Contents sections often don't have PRIMARY SIGNAL typography but have contents_marker
+    contents_start = _detect_contents_on_first_pages(anchors, max_page=4)
+    if contents_start:
+        article_starts.append(contents_start)
+
     # Step 1: Extract typography candidates (PRIMARY SIGNAL)
     candidates = _extract_typography_candidates(anchors)
 
@@ -323,7 +431,7 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
     # Step 4: Build article_starts with rich metadata including material_kind
     pages = sorted(set(cand["page"] for cand in candidates))
 
-    article_starts = []
+    # Add typography-detected articles (append to existing article_starts list)
     for page_num in pages:
         material_kind = _classify_material_kind(page_num, anchors)
 
@@ -340,6 +448,9 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
                 "ru_en_dedup_policy": "enabled" if POLICY.duplicate_filter_enabled else "disabled",
             }
         })
+
+    # Step 5: Sort by start_page (Contents should be first if detected)
+    article_starts.sort(key=lambda x: x["start_page"])
 
     return article_starts
 

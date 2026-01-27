@@ -2,12 +2,11 @@
 # PDF Extractor — MetadataVerifier
 # Verify and enrich article manifest for OutputBuilder readiness.
 #
-# NEW in v1.1.0: Material-aware enrichment
-# - Accepts input from BoundaryDetector (with material_kind) + anchors
+# v1.2.0: Filename generation policy v_1_0 for RU journals
 # - For research articles: extracts first_author_surname from anchors
-#   - Primary source: en_authors (EN preferred)
-#   - Fallback source: ru_authors + transliteration
-#   - Fail-fast (exit 40) if neither available
+#   - Primary source: ru_authors + transliteration (RU journals policy)
+#   - Fallback source: en_authors (with validation against gene/rsID patterns)
+#   - Fail-fast (exit 40) if neither available or valid
 # - For contents/editorial/digest: no surname required (service suffixes)
 # - Adds first_author_surname_source and evidence fields for research
 #
@@ -28,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 COMPONENT = "MetadataVerifier"
-VERSION = "1.1.0"  # Material-aware enrichment + surname extraction
+VERSION = "1.2.0"  # Filename generation policy v_1_0 for RU journals
 
 
 def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
@@ -91,10 +90,43 @@ _TRANSLIT_MAP = {
 
 
 def _transliterate_ru_to_en(text: str) -> str:
-    """Transliterate Russian text to Latin (simplified GOST 7.79 System B)."""
+    """
+    Transliterate Russian text to Latin (GOST 7.79-2000 System B with context rules).
+
+    Context-dependent rules for surnames (observed in reference data):
+    - "ие" → "iye" (Муртазалиева → Murtazaliyeva)
+    - "ню" → "niu" (Гуменюк → Gumeniuk)
+    """
     result = []
-    for char in text:
-        result.append(_TRANSLIT_MAP.get(char, char))
+    skip_next = False
+
+    for i, char in enumerate(text):
+        if skip_next:
+            skip_next = False
+            continue
+
+        # Context rule 1: "ие" / "Ие" → "iye" / "Iye"
+        if char in ('и', 'И') and i < len(text) - 1 and text[i+1] in ('е', 'Е'):
+            if char == 'И':
+                result.append('Iy')
+            else:
+                result.append('iy')
+            result.append('e')
+            skip_next = True
+        # Context rule 2: "ню" / "Ню" → "niu" / "Niu"
+        elif char in ('н', 'Н') and i < len(text) - 1 and text[i+1] in ('ю', 'Ю'):
+            if char == 'Н':
+                result.append('Ni')
+            else:
+                result.append('ni')
+            # Next 'ю' will be handled by following condition
+        elif char in ('ю', 'Ю') and i > 0 and text[i-1] in ('н', 'Н'):
+            # Part of "ню" → "niu", just add 'u'
+            result.append('u')
+        else:
+            # Standard GOST mapping
+            result.append(_TRANSLIT_MAP.get(char, char))
+
     return ''.join(result)
 
 
@@ -134,6 +166,48 @@ def _extract_first_surname(author_text: str, is_ru: bool = False) -> Optional[st
     return surname if surname else None
 
 
+def _validate_surname_en(surname: str) -> bool:
+    """
+    Validate that extracted surname looks like a real surname (not gene/rsID/biological term).
+
+    Reject patterns:
+    - Gene symbols: short all-caps alphanumeric (TPM1, TGFBR1, MMP1, LPL, LMF1)
+    - rsID: starts with "rs" followed by digits (rs1143634)
+    - Contains parentheses (often indicates biological notation)
+    - All uppercase AND <= 8 chars (likely acronym/gene)
+    - Contains digits (genes often have numbers)
+
+    Accept patterns:
+    - Capitalized word (Gandaeva, Burykina, Zaklyazminskaya)
+    - Mixed case with lowercase letters
+    """
+    if not surname or len(surname) < 2:
+        return False
+
+    # Reject rsID pattern (rs followed by digits)
+    if re.match(r'^rs\d+', surname, re.IGNORECASE):
+        return False
+
+    # Reject if contains parentheses (biological notation)
+    if '(' in surname or ')' in surname:
+        return False
+
+    # Reject if contains digits (genes often have numbers: TPM1, rs1143634)
+    if re.search(r'\d', surname):
+        return False
+
+    # Reject short all-uppercase words (likely gene symbols: TPM1, TGFBR1, MMP1, LPL)
+    if surname.isupper() and len(surname) <= 8:
+        return False
+
+    # Accept if starts with capital and has lowercase letters (normal surname pattern)
+    if re.match(r'^[A-Z][a-z]', surname):
+        return True
+
+    # Reject all other patterns
+    return False
+
+
 def _find_anchor_in_window(
     from_page: int,
     to_page: int,
@@ -159,36 +233,46 @@ def _extract_surname_for_research(
     """
     Extract first_author_surname for research article.
 
+    Policy: filename_generation_policy_v_1_0 for RU journals
+    - PRIMARY: ru_authors (required for RU journals)
+    - Transliteration preference:
+      1. Author's own transliteration from en_authors (if valid)
+      2. GOST 7.79-2000 System B mechanical transliteration
+    - FALLBACK: en_authors only (if ru_authors missing)
+
     Returns dict with:
     - first_author_surname: str
-    - first_author_surname_source: "en_authors" | "ru_authors_translit"
+    - first_author_surname_source: "ru_authors_author_translit" | "ru_authors_translit" | "en_authors"
     - evidence: {anchor_type: str, anchor_page: int}
 
-    Raises SystemExit(40) if neither en_authors nor ru_authors found in window.
+    Raises SystemExit(40) if neither source yields valid surname.
     """
     window_end = from_page + 1  # Check page and page+1
 
-    # PRIMARY: Try en_authors first
-    en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
-    if en_anchor:
-        author_text = en_anchor.get("text", "")
-        surname = _extract_first_surname(author_text, is_ru=False)
-        if surname:
-            return {
-                "first_author_surname": surname,
-                "first_author_surname_source": "en_authors",
-                "evidence": {
-                    "anchor_type": "en_authors",
-                    "anchor_page": en_anchor.get("page")
-                }
-            }
-
-    # FALLBACK: Try ru_authors + transliteration
+    # PRIMARY: Try ru_authors (RU journals policy)
     ru_anchor = _find_anchor_in_window(from_page, window_end, "ru_authors", anchors)
     if ru_anchor:
-        author_text = ru_anchor.get("text", "")
-        surname_ru = _extract_first_surname(author_text, is_ru=True)
+        author_text_ru = ru_anchor.get("text", "")
+        surname_ru = _extract_first_surname(author_text_ru, is_ru=True)
         if surname_ru:
+            # Try to find author's own transliteration in en_authors
+            en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
+            if en_anchor:
+                author_text_en = en_anchor.get("text", "")
+                surname_en_author = _extract_first_surname(author_text_en, is_ru=False)
+                if surname_en_author and _validate_surname_en(surname_en_author):
+                    # Use author's own transliteration (preferred for RU journals)
+                    return {
+                        "first_author_surname": surname_en_author,
+                        "first_author_surname_source": "ru_authors_author_translit",
+                        "evidence": {
+                            "anchor_type": "ru_authors",
+                            "anchor_page": ru_anchor.get("page"),
+                            "en_authors_verified": True
+                        }
+                    }
+
+            # Fallback to GOST mechanical transliteration
             surname_en = _transliterate_ru_to_en(surname_ru)
             return {
                 "first_author_surname": surname_en,
@@ -199,11 +283,26 @@ def _extract_surname_for_research(
                 }
             }
 
-    # FAIL-FAST: Neither en_authors nor ru_authors found
+    # FALLBACK: Try en_authors only (if ru_authors missing)
+    en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
+    if en_anchor:
+        author_text = en_anchor.get("text", "")
+        surname = _extract_first_surname(author_text, is_ru=False)
+        if surname and _validate_surname_en(surname):
+            return {
+                "first_author_surname": surname,
+                "first_author_surname_source": "en_authors",
+                "evidence": {
+                    "anchor_type": "en_authors",
+                    "anchor_page": en_anchor.get("page")
+                }
+            }
+
+    # FAIL-FAST: Neither ru_authors nor valid en_authors found
     _error_exit(
         40,
         "build_failed",
-        f"Research article starting at page {from_page}: no en_authors or ru_authors anchor found in window [{from_page}, {window_end}]"
+        f"Research article starting at page {from_page}: no valid ru_authors or en_authors anchor found in window [{from_page}, {window_end}]"
     )
 
 
@@ -216,7 +315,8 @@ def _verify_and_enrich_boundary_range(
     """
     Verify and enrich a single boundary range with material-specific enrichment.
 
-    For research articles: extracts first_author_surname from anchors (EN primary, RU fallback)
+    For research articles: extracts first_author_surname from anchors
+    - RU journals policy: ru_authors PRIMARY (transliterated), en_authors FALLBACK (validated)
     For contents/editorial/digest: uses service suffixes (Contents, Editorial, Digest)
 
     Returns enriched article dict ready for OutputBuilder.
