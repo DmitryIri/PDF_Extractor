@@ -310,7 +310,8 @@ def _verify_and_enrich_boundary_range(
     boundary_range: Dict[str, Any],
     issue_prefix: str,
     anchors: List[Dict[str, Any]],
-    splitter_output_dir: Path
+    splitter_output_dir: Path,
+    issue_id: str = None
 ) -> Dict[str, Any]:
     """
     Verify and enrich a single boundary range with material-specific enrichment.
@@ -389,9 +390,13 @@ def _verify_and_enrich_boundary_range(
     enriched["expected_filename"] = expected_filename
 
     # Verify splitter output file exists (if splitter_output_dir provided)
-    # Expected splitter output path: {splitter_output_dir}/{article_id}.pdf
+    # Expected splitter output path: {splitter_output_dir}/{issue_id}_{article_id}.pdf
+    # (Splitter names files as {issue_id}_{article_id}.pdf per line 109 of splitter.py)
     if splitter_output_dir:
-        splitter_path = splitter_output_dir / f"{article_id}.pdf"
+        if issue_id:
+            splitter_path = splitter_output_dir / f"{issue_id}_{article_id}.pdf"
+        else:
+            splitter_path = splitter_output_dir / f"{article_id}.pdf"
 
         if not splitter_path.exists():
             _error_exit(30, "verification_failed", f"Article {article_id}: splitter output file does not exist: {splitter_path}")
@@ -479,7 +484,8 @@ def main() -> None:
             boundary_range,
             issue_prefix,
             anchors,
-            splitter_output_dir
+            splitter_output_dir,
+            issue_id
         )
         verified_articles.append(enriched)
 
