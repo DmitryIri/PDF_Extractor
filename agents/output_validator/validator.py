@@ -332,8 +332,8 @@ def main():
 
         export_path = Path(data["export_path"])
 
-        # Step 2: Validate export structure
-        _validate_export_structure(export_path)
+        # Step 2: Validate export structure (pass as string for error messages)
+        _validate_export_structure(str(export_path))
 
         # Step 3: Collect article files
         articles_dir = export_path / "articles"
@@ -350,15 +350,15 @@ def main():
         checksums_path = export_path / "checksums.sha256"
         _validate_checksums(data["articles"], checksums_path, export_path)
 
-        # Success envelope
+        # Success envelope (ensure all Path objects converted to str)
         success_envelope = {
             "status": "success",
             "component": COMPONENT,
             "version": VERSION,
             "data": {
-                "issue_id": data["issue_id"],
+                "issue_id": str(data["issue_id"]),
                 "export_path": str(export_path),
-                "total_articles": data["total_articles"],
+                "total_articles": int(data["total_articles"]),
                 "validation_summary": {
                     "t_l_e_invariant": "satisfied",
                     "export_structure": "valid",
