@@ -77,6 +77,7 @@ def _validate_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     issue_id = payload["issue_id"]
     total_pages = payload["total_pages"]
     anchors = payload["anchors"]
+    pdf_path = payload.get("pdf_path")  # Optional: pass through if present
 
     if not isinstance(issue_id, str) or not issue_id.strip():
         raise ValueError("issue_id must be a non-empty string")
@@ -85,11 +86,14 @@ def _validate_input(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(anchors, list):
         raise ValueError("anchors must be an array")
 
-    return {
+    result = {
         "issue_id": issue_id,
         "total_pages": total_pages,
         "anchors": anchors,
     }
+    if pdf_path is not None:
+        result["pdf_path"] = pdf_path
+    return result
 
 
 def _is_cyrillic_dominant(text: str) -> bool:
@@ -530,6 +534,10 @@ def main() -> int:
             "article_starts": article_starts,
             "boundary_ranges": boundary_ranges,
         }
+
+        # Pass through pdf_path if present (for downstream components like Splitter)
+        if "pdf_path" in inp:
+            data["pdf_path"] = inp["pdf_path"]
 
         _emit_success(data)
         return EXIT_SUCCESS

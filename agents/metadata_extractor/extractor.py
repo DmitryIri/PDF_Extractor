@@ -656,7 +656,7 @@ def main() -> None:
         "status": "success",
         "component": COMPONENT,
         "version": VERSION,
-        "data": {"issue_id": issue_id, "total_pages": total_pages, "anchors": anchors},
+        "data": {"issue_id": issue_id, "pdf_path": pdf_path, "total_pages": total_pages, "anchors": anchors},
         "error": None,
     }
     json_bytes = (json.dumps(out, ensure_ascii=False) + "\n").encode("utf-8")
