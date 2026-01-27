@@ -49,6 +49,40 @@ TOP_REGION_FRAC = 0.40
 RU_REQUIRED_CONFIDENCE = 0.90
 
 
+def _get_issue_id(payload: Dict[str, Any]) -> str:
+    """
+    Extract issue_id from payload, supporting multiple formats.
+    Returns issue_id or raises ValueError if not found.
+    """
+    issue_id = payload.get("issue_id")
+    if not isinstance(issue_id, str) or not issue_id.strip():
+        raise ValueError("issue_id must be a non-empty string")
+    return issue_id
+
+
+def _get_pdf_path(payload: Dict[str, Any]) -> str:
+    """
+    Extract PDF path from payload, supporting multiple formats:
+    - Canonical: payload["pdf"]["path"]
+    - Alias (PDFInspector): payload["pdf_path"]
+
+    Returns pdf_path or raises ValueError if not found.
+    """
+    # Try canonical format first
+    if "pdf" in payload and isinstance(payload["pdf"], dict):
+        pdf_path = payload["pdf"].get("path")
+        if isinstance(pdf_path, str) and pdf_path.strip():
+            return pdf_path
+
+    # Try alias format (PDFInspector contract)
+    if "pdf_path" in payload:
+        pdf_path = payload["pdf_path"]
+        if isinstance(pdf_path, str) and pdf_path.strip():
+            return pdf_path
+
+    raise ValueError("pdf path must be provided via pdf.path or pdf_path")
+
+
 def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
     out = {
         "status": "error",
@@ -583,17 +617,16 @@ def _extract_contents_marker(text_blocks: List[Dict[str, Any]]) -> List[Dict[str
 def main() -> None:
     try:
         raw = sys.stdin.read()
-        payload = json.loads(raw)
+        raw_json = json.loads(raw)
     except Exception as e:
         _error_exit(10, "invalid_input", f"invalid_input: {e}")
 
+    # Unwrap envelope: if raw_json has "data" key, use it; otherwise use raw_json itself
+    payload = raw_json.get("data", raw_json)
+
     try:
-        issue_id = payload["issue_id"]
-        pdf_path = payload["pdf"]["path"]
-        if not isinstance(issue_id, str) or not issue_id.strip():
-            raise ValueError("issue_id must be a non-empty string")
-        if not isinstance(pdf_path, str) or not pdf_path.strip():
-            raise ValueError("pdf.path must be a non-empty string")
+        issue_id = _get_issue_id(payload)
+        pdf_path = _get_pdf_path(payload)
     except Exception as e:
         _error_exit(10, "missing_field", f"missing_field: {e}")
 
