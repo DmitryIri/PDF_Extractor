@@ -89,21 +89,21 @@ run_component "BoundaryDetector" \
     "$RUN_DIR/outputs/04_boundary_detector.json" \
     "$RUN_DIR/logs/04_boundary_detector_stderr.log"
 
+run_component "MetadataVerifier" \
+    "agents/metadata_verifier/verifier.py" \
+    "$RUN_DIR/outputs/04_boundary_detector.json" \
+    "$RUN_DIR/outputs/05_metadata_verifier.json" \
+    "$RUN_DIR/logs/05_metadata_verifier_stderr.log"
+
 run_component "Splitter" \
     "agents/splitter/splitter.py" \
     "$RUN_DIR/outputs/04_boundary_detector.json" \
-    "$RUN_DIR/outputs/05_splitter.json" \
-    "$RUN_DIR/logs/05_splitter_stderr.log"
-
-run_component "MetadataVerifier" \
-    "agents/metadata_verifier/verifier.py" \
-    "$RUN_DIR/outputs/05_splitter.json" \
-    "$RUN_DIR/outputs/06_metadata_verifier.json" \
-    "$RUN_DIR/logs/06_metadata_verifier_stderr.log"
+    "$RUN_DIR/outputs/06_splitter.json" \
+    "$RUN_DIR/logs/06_splitter_stderr.log"
 
 run_component "OutputBuilder" \
     "agents/output_builder/builder.py" \
-    "$RUN_DIR/outputs/06_metadata_verifier.json" \
+    "$RUN_DIR/outputs/05_metadata_verifier.json" \
     "$RUN_DIR/outputs/07_output_builder.json" \
     "$RUN_DIR/logs/07_output_builder_stderr.log"
 
