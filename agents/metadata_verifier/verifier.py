@@ -494,6 +494,7 @@ def main() -> None:
 
     # Build VerifiedArticleManifest
     verified_manifest = {
+        "issue_id": issue_id,
         "journal_code": journal_code,
         "issue_prefix": issue_prefix,
         "run": {
