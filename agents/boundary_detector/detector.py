@@ -533,6 +533,7 @@ def main() -> int:
             "total_pages": inp["total_pages"],
             "article_starts": article_starts,
             "boundary_ranges": boundary_ranges,
+            "anchors": inp["anchors"],  # Pass through anchors for MetadataVerifier
         }
 
         # Pass through pdf_path if present (for downstream components like Splitter)
