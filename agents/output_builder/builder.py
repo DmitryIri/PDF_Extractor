@@ -234,7 +234,8 @@ def _build_export_structure(
 
         exported_article = {
             "article_id": article_id,
-            "expected_filename": expected_filename,
+            "filename": expected_filename,  # OutputValidator expects "filename"
+            "expected_filename": expected_filename,  # Keep for backward compatibility
             "material_kind": material_kind,
             "export_path": str(final_relative_path),
             "bytes": dest_size,
