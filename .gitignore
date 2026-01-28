@@ -44,3 +44,7 @@ _audit/*
 !_audit/claude_code/
 _audit/claude_code/*
 !_audit/claude_code/reports/
+_audit/claude_code/reports/*
+!_audit/claude_code/reports/*/
+# Ignore nested _audit anomaly (malformed structure from previous ops)
+_audit/claude_code/reports/_audit/
