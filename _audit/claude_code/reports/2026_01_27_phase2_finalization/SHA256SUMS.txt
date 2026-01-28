@@ -1,0 +1,2 @@
+aba7ab8d8279c5ddaafab302e8c5bfbe3dfd67fd581d1c247c77e359e5bb94d1  2026-01-27-claude-code-task-full-pipeline-run-recovery-m.txt
+def2db6998c43c6ffe67f8ae8a0ec45e423416ad19091b1c2eab629effc020d3  conversation-2026-01-26-130318.txt
