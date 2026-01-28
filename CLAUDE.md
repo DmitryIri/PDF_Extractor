@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_5.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_6.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 

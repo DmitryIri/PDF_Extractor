@@ -26,6 +26,7 @@ logs/
 # === Claude Code temporary files ===
 conversation-*.txt
 *-you-are-in-doc-editing-mode-*.txt
+/*-claude-code-task-*.txt
 # === Secrets ===
 .env.*
 # Allow tracking of normative JSON schemas and contracts
@@ -37,3 +38,9 @@ conversation-*.txt
 # Allow project-level Claude Code settings
 !.claude/settings.json
 _audit/
+# Allow committing claude audit reports even if _audit is generally ignored
+!_audit/
+_audit/*
+!_audit/claude_code/
+_audit/claude_code/*
+!_audit/claude_code/reports/
