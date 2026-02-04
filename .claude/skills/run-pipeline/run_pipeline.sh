@@ -228,6 +228,11 @@ scan_exports_in_root() {
 declare -a STEPS_LOG=()
 
 run_core_tests() {
+  # Ensure venv python is first on PATH and agents can find shared imports.
+  # Mirrors what tools/run_issue_pipeline.sh does via PY + PYTHONPATH (line 118).
+  export PATH="$(dirname "${PY}"):${PATH}"
+  export PYTHONPATH="${PYTHONPATH:-$(pwd)}"
+
   STEPS_LOG=()
 
   # ── Step C1: pytest unit/ ─────────────────────────────────────────────
