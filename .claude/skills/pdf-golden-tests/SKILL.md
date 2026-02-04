@@ -27,9 +27,20 @@ CORE suite (must exist in repo):
 - bash tests/test_output_builder.sh
 - bash tests/test_output_validator_integration.sh
 - python tests/test_output_validator_unit.py (only if used as a runner)
+- **Golden: BoundaryDetector regression** (data-only, no runtime artifacts needed)
+  - Requires: `golden_tests/mg_2025_12_boundaries.json` and `golden_tests/mg_2025_12_article_starts.json`
+  - Preflight: `test -f golden_tests/mg_2025_12_boundaries.json && test -f golden_tests/mg_2025_12_article_starts.json`
+  - Command: `cat golden_tests/mg_2025_12_boundaries.json | python scripts/verify_boundary_detector_golden.py`
+  - Verifies: 28 article starts, confidence == 1.0, boundary range invariants (contiguous, non-overlapping, covers all pages)
 
 E2E suite (optional, only if script exists):
 - bash tests/manual/test_full_pipeline_*.sh
+- **Golden: Splitter regression** (requires live pipeline artifacts)
+  - Requires: prior pipeline run with split PDFs at `/srv/pdf-extractor/tmp/articles/`
+  - Requires: splitter output JSON copied to `/tmp/out.json` (script reads from this hardcoded path)
+  - Preflight: `test -f /tmp/out.json && test -d /srv/pdf-extractor/tmp/articles`
+  - Command: `python scripts/verify_splitter_golden.py`
+  - Verifies: PDF existence, page counts vs boundary ranges, file sizes > 0, sha256 presence
 
 ## Procedure (deterministic)
 1) Discover available suites by listing tests/ paths (no assumptions).
