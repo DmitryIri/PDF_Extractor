@@ -125,6 +125,14 @@
   - Commits: see feat(surname-fix) + docs commits below
   - **Phase 3 bootstrap stub created:** `docs/governance/task_specs/task_spec_phase_3_ui_db_bootstrap_v_1_0.md`
 
+- **Housekeeping session (same date, later):**
+  - /archive-exports executed: 5 export files → `_audit/claude_code/exports/2026_02_04__13_13_14/`, sha256 verified 5/5 OK, root cleaned.
+  - Bugfix: archive-exports SKILL.md v_1_0 → v_1_1 — added sha256sum -c verification gate anchored at repo root (latent bug: spec had no verification step; runtime improvisation used `cd "$ARCH"` + relative path which failed).
+  - .claude/* versioning confirmed (3 files already tracked); committed 4 previously-untracked skills/rules — SHA **df35880**.
+  - .gitignore: added `.claude/skills/**/*.bak_*`, removed 2 stale .bak files — SHA **44e3843**.
+  - settings.json: added `Bash(git show:*)`, `Bash(git check-ignore:*)` — SHA **f0804ca**.
+  - settings.local.json sanitized: 93 → 43 entries (removed __NEW_LINE_ artifacts, /tmp/ paths, heredocs, dups, loop fragments, hardcoded session IDs). Untracked, backup created + deleted, tree clean.
+
 ## Material Classification Implementation & RU-Journal Filename Policy (2026-01-26)
 
 **Session Context:** Four-phase implementation fixing filename generation for RU-journals (Mg_2025-12 issue)
