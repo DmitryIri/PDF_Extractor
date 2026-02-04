@@ -136,25 +136,30 @@ PY
 }
 
 json_get_TL() {
-  local json="$1"
-  # prints "T L" (two ints) or "0 0" if missing
-  python3 - "$json" <<PY
-import json, sys
-p=sys.argv[1]
-o=json.load(open(p,"r",encoding="utf-8"))
-data=o.get("data") or {}
-t=data.get("total_articles")
-arts=data.get("articles") or []
+  # Arg: path to 08.json (validator envelope).
+  # T comes from 08.json .data.total_articles (validated).
+  # L comes from 07.json .data.articles (builder output; 08.json does not re-export the array).
+  # Prints "T L" (two ints) or "0 0" if missing.
+  local json08="$1"
+  python3 - "$json08" <<PY
+import json, sys, pathlib
+p08=pathlib.Path(sys.argv[1])
+p07=p08.parent/"07.json"
+o08=json.loads(p08.read_text(encoding="utf-8"))
+o07=json.loads(p07.read_text(encoding="utf-8")) if p07.exists() else {}
+t=o08.get("data",{}).get("total_articles",0)
+arts=o07.get("data",{}).get("articles") or []
 l=len(arts) if isinstance(arts,list) else 0
-t = int(t) if isinstance(t,(int,float,str)) and str(t).isdigit() else 0
+t=int(t) if isinstance(t,(int,float,str)) and str(t).isdigit() else 0
 print(f"{t} {l}")
 PY
 }
 
 count_export_pdfs() {
   local dir="$1"
-  # count PDFs only in top-level of export_path
-  find "$dir" -maxdepth 1 -type f -name '*.pdf' | wc -l | tr -d ' '
+  # PDFs are under export_path/articles/ per OutputBuilder layout.
+  # checksums.sha256 confirms relative paths: articles/*.pdf
+  find "$dir/articles" -maxdepth 1 -type f -name '*.pdf' | wc -l | tr -d ' '
 }
 
 run_sha256_check() {
@@ -483,7 +488,11 @@ execute_pipeline() {
 }
 
 main() {
-  preflight_repo || exit 2
+  # preflight_repo is a pre-gate precondition (design §4); post-gate is an observer
+  # and must not be gated by repo cleanliness.
+  if [[ "${POST_GATE_ONLY}" != "1" ]]; then
+    preflight_repo || exit 2
+  fi
 
   if [[ "${PRE_GATE_ONLY}" == "1" ]]; then
     pre_gate_only || exit 2
