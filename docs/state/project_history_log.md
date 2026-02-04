@@ -104,6 +104,17 @@
 - Снят блокер для начала работы в Claude Code.
 
 ## 2026-02-04
+- **Docs canonicalization (docs(canon) session):**
+  - Archived superseded design docs: techspec v_2_5, boundary_detector v_1_1
+  - Archived superseded summaries: v_2_6 through v_2_10
+  - Archived working artifact: REPORT_universal_surname_selection_fix_exec.md
+  - Removed pre-sync duplicate: `_archive/session_logs/session_closure_log_2026_01_12_v1_0.md` (exact copy in docs/state/)
+  - canonical_artifact_registry v_1_1 → v_1_2: added §5 Policy Documents type
+  - project_files_index v_1_7 → v_1_8: explicit canonical pointers, archive notes, task_specs/ registered
+  - Created `_archive/legacy_aliases/2026_02_04/README.md` — full move manifest
+  - Known immutable refs noted: TechSpec v_2_6 and BD v_1_2 reference filename_generation_policy_v_1_0 (historically accurate; cannot patch immutable files)
+  - Session closure log naming inconsistency noted (mixed dots/underscores) — no rename (preserves git history refs)
+
 - **Universal Surname Selection Fix complete (Plan-03):**
   - MetadataVerifier v1.2.0 → v1.3.0: STEP A→B→C surname extraction with running-header filter, 2-initial byline regex, HARD/SOFT stopwords, GOST rule 3 (ый→yi), TOC re-verification by anchors
   - New module: `shared/author_surname_normalizer.py` — pure functions (is_running_header, is_valid_surname, is_toc_by_anchors, looks_like_author_byline)

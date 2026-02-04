@@ -1,7 +1,7 @@
 # Canonical Artifact Registry
 
 **Статус:** Canonical
-**Версия:** v_1_1
+**Версия:** v_1_2
 
 ## Назначение
 
@@ -151,18 +151,37 @@
 
 ---
 
-## 5. Правило приоритета
+## 5. Policy-артефакты (нормативные правила pipeline)
+
+### 5.1 Policy Documents
+- **Файл:** `<policy_name>_v_X_Y.md` (например, `filename_generation_policy_v_1_1.md`)
+- **Тип:** Policy
+- **Обязательность:** при наличии детальных правил обработки в pipeline
+- **Роль:**
+  - задаёт детерминированные правила принятия решений компонентами pipeline;
+  - версионируется при любых изменениях;
+  - является нормативным для соответствующих компонентов.
+
+**Текущие канонические Policy:**
+- `article_start_detection_policy_v_1_0.md` — BoundaryDetector start detection
+- `filename_generation_policy_v_1_1.md` — MetadataVerifier filename generation (supersedes v_1_0)
+
+---
+
+## 6. Правило приоритета
 
 При конфликте между документами приоритет применяется в следующем порядке:
 
 1. Canonical Artifact Registry
 2. Governance-артефакты
-3. State-артефакты
-4. Design-артефакты
+3. Policy-артефакты
+4. State-артефакты
+5. Design-артефакты
 
 ---
 
-## 6. CHANGELOG
+## 7. CHANGELOG
 
+- **v_1_2 — 2026-02-04** — Добавлен тип Policy-артефакта (§5): Policy Documents. Зарегистрированы `article_start_detection_policy_v_1_0.md` и `filename_generation_policy_v_1_1.md`. Приоритет-порядок (§6) обновлён: Policy выше State.
 - **v_1_1 — 2026-01-22** — Добавлен тип Design-артефакта: Component Design Documents (§4.3) для поддержки детальных проектных документов компонентов (например, BoundaryDetector).
 - **v_1_0** — первичная каноническая фиксация реестра артефактов и их ролей.
