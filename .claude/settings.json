@@ -8,8 +8,6 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(mkdir:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
       "Bash(sha256sum:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
