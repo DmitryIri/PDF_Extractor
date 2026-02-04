@@ -26,8 +26,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from shared.author_surname_normalizer import (
+    is_running_header, is_valid_surname, is_toc_by_anchors, looks_like_author_byline
+)
+
 COMPONENT = "MetadataVerifier"
-VERSION = "1.2.0"  # Filename generation policy v_1_0 for RU journals
+VERSION = "1.3.0"  # Filename generation policy v_1_1 (GOST rule 3 + text_block fallback)
 
 
 def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
@@ -62,6 +66,13 @@ def _sanitize_surname(surname: str) -> str:
     # Strip leading/trailing underscores
     sanitized = sanitized.strip('_')
     return sanitized
+
+
+def _capitalize_surname(surname: str) -> Optional[str]:
+    """Capitalise first letter of surname.  Returns None for empty input."""
+    if not surname:
+        return None
+    return surname[0].upper() + surname[1:]
 
 
 def _extract_journal_code(issue_prefix: str) -> str:
@@ -123,6 +134,14 @@ def _transliterate_ru_to_en(text: str) -> str:
         elif char in ('ю', 'Ю') and i > 0 and text[i-1] in ('н', 'Н'):
             # Part of "ню" → "niu", just add 'u'
             result.append('u')
+        # Context rule 3: word-final "ый"/"Ый" → "yi"/"Yi"  (not "yy")
+        # Безчасный → Bezchasnyi  (consistent with ие→iye, ню→niu)
+        elif char in ('й', 'Й') and i > 0 and text[i-1] in ('ы', 'Ы'):
+            at_word_end = (i == len(text) - 1) or not ('\u0400' <= text[i+1] <= '\u04FF')
+            if at_word_end:
+                result.append('i' if char == 'й' else 'I')
+            else:
+                result.append(_TRANSLIT_MAP.get(char, char))   # standard 'y'
         else:
             # Standard GOST mapping
             result.append(_TRANSLIT_MAP.get(char, char))
@@ -226,44 +245,134 @@ def _find_anchor_in_window(
     return None
 
 
+def _find_non_header_anchor_in_window(
+    from_page: int,
+    to_page: int,
+    anchor_type: str,
+    anchors: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """Find first anchor of given type within [from_page, to_page], skipping running headers."""
+    for anchor in anchors:
+        if anchor.get("type") == anchor_type:
+            anchor_page = anchor.get("page")
+            if anchor_page and from_page <= anchor_page <= to_page:
+                if not is_running_header(anchor.get("text", "")):
+                    return anchor
+    return None
+
+
+# ---------------------------------------------------------------------------
+# STEP C: text_block fallback  (N=6 bounded scan)
+# ---------------------------------------------------------------------------
+_STEP_C_SCAN_LIMIT = 6
+
+
+def _extract_surname_from_text_blocks(
+    from_page: int,
+    anchors: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """Scan text_blocks in [from_page, from_page+1] for an author byline.
+
+    Filters (in order): running-header → 2-initial byline pattern → stopwords.
+    N=6 limit counts only byline-pattern candidates examined, NOT all
+    text_blocks seen.  Running headers and non-byline blocks (page numbers,
+    section titles, journal names) are transparent to the scan window.
+    Returns RU candidate preferentially (GOST is deterministic).
+    """
+    window_end = from_page + 1
+    scanned = 0                                          # byline candidates seen
+    en_candidate: Optional[Dict[str, Any]] = None
+    ru_candidate: Optional[Dict[str, Any]] = None
+
+    for anchor in anchors:
+        if scanned >= _STEP_C_SCAN_LIMIT:
+            break
+        if anchor.get("type") != "text_block":
+            continue
+        anchor_page = anchor.get("page")
+        if not anchor_page or not (from_page <= anchor_page <= window_end):
+            continue
+
+        text = anchor.get("text", "")
+
+        # Filter 1: skip running headers (transparent to scan limit)
+        if is_running_header(text):
+            continue
+        # Filter 2: must match 2-initial byline pattern (transparent to scan limit)
+        if not looks_like_author_byline(text):
+            continue
+
+        scanned += 1                                     # only byline-pattern blocks counted
+
+        # Extract first word (surname candidate)
+        words = text.strip().split()
+        first_word = words[0].rstrip('.,;:') if words else ""
+        if not first_word:
+            continue
+
+        # Detect language by first character
+        is_cyrillic = '\u0400' <= first_word[0] <= '\u04FF'
+
+        if is_cyrillic and ru_candidate is None:
+            translit = _capitalize_surname(_transliterate_ru_to_en(first_word))
+            if translit and is_valid_surname(translit, step_c=True):
+                ru_candidate = {
+                    "first_author_surname": translit,
+                    "first_author_surname_source": "text_block_translit",
+                    "evidence": {
+                        "anchor_type": "text_block",
+                        "anchor_page": anchor_page,
+                        "text_block_index": scanned - 1
+                    }
+                }
+        elif not is_cyrillic and en_candidate is None:
+            capitalised = _capitalize_surname(first_word)
+            if capitalised and _validate_surname_en(capitalised) and is_valid_surname(capitalised, step_c=True):
+                en_candidate = {
+                    "first_author_surname": capitalised,
+                    "first_author_surname_source": "text_block",
+                    "evidence": {
+                        "anchor_type": "text_block",
+                        "anchor_page": anchor_page,
+                        "text_block_index": scanned - 1
+                    }
+                }
+
+        # Early exit if both candidates found
+        if ru_candidate and en_candidate:
+            break
+
+    # Prefer RU candidate (GOST is canonical / deterministic)
+    return ru_candidate or en_candidate
+
+
 def _extract_surname_for_research(
     from_page: int,
     anchors: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
+    """Extract first_author_surname for research article.
+
+    Algorithm: STEP A (ru+en, header-filtered) → STEP B (en only) →
+               STEP C (text_block N=6) → exit-40 (STEP D deferred).
+
+    Policy: filename_generation_policy_v_1_1
     """
-    Extract first_author_surname for research article.
+    window_end = from_page + 1
 
-    Policy: filename_generation_policy_v_1_0 for RU journals
-    - PRIMARY: ru_authors (required for RU journals)
-    - Transliteration preference:
-      1. Author's own transliteration from en_authors (if valid)
-      2. GOST 7.79-2000 System B mechanical transliteration
-    - FALLBACK: en_authors only (if ru_authors missing)
-
-    Returns dict with:
-    - first_author_surname: str
-    - first_author_surname_source: "ru_authors_author_translit" | "ru_authors_translit" | "en_authors"
-    - evidence: {anchor_type: str, anchor_page: int}
-
-    Raises SystemExit(40) if neither source yields valid surname.
-    """
-    window_end = from_page + 1  # Check page and page+1
-
-    # PRIMARY: Try ru_authors (RU journals policy)
-    ru_anchor = _find_anchor_in_window(from_page, window_end, "ru_authors", anchors)
+    # ── STEP A: ru_authors + en_authors (with running-header filter) ────────
+    ru_anchor = _find_non_header_anchor_in_window(from_page, window_end, "ru_authors", anchors)
     if ru_anchor:
         author_text_ru = ru_anchor.get("text", "")
         surname_ru = _extract_first_surname(author_text_ru, is_ru=True)
         if surname_ru:
-            # Try to find author's own transliteration in en_authors
-            en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
+            # A2a: try author's own transliteration from en_authors
+            en_anchor = _find_non_header_anchor_in_window(from_page, window_end, "en_authors", anchors)
             if en_anchor:
                 author_text_en = en_anchor.get("text", "")
-                surname_en_author = _extract_first_surname(author_text_en, is_ru=False)
-                if surname_en_author and _validate_surname_en(surname_en_author):
-                    # Use author's own transliteration (preferred for RU journals)
+                surname_en = _capitalize_surname(_extract_first_surname(author_text_en, is_ru=False))
+                if surname_en and _validate_surname_en(surname_en) and is_valid_surname(surname_en):
                     return {
-                        "first_author_surname": surname_en_author,
+                        "first_author_surname": surname_en,
                         "first_author_surname_source": "ru_authors_author_translit",
                         "evidence": {
                             "anchor_type": "ru_authors",
@@ -272,23 +381,24 @@ def _extract_surname_for_research(
                         }
                     }
 
-            # Fallback to GOST mechanical transliteration
-            surname_en = _transliterate_ru_to_en(surname_ru)
-            return {
-                "first_author_surname": surname_en,
-                "first_author_surname_source": "ru_authors_translit",
-                "evidence": {
-                    "anchor_type": "ru_authors",
-                    "anchor_page": ru_anchor.get("page")
+            # A2b: GOST mechanical transliteration
+            surname_translit = _capitalize_surname(_transliterate_ru_to_en(surname_ru))
+            if surname_translit and is_valid_surname(surname_translit):
+                return {
+                    "first_author_surname": surname_translit,
+                    "first_author_surname_source": "ru_authors_translit",
+                    "evidence": {
+                        "anchor_type": "ru_authors",
+                        "anchor_page": ru_anchor.get("page")
+                    }
                 }
-            }
 
-    # FALLBACK: Try en_authors only (if ru_authors missing)
-    en_anchor = _find_anchor_in_window(from_page, window_end, "en_authors", anchors)
+    # ── STEP B: en_authors only (if no valid ru_authors) ────────────────────
+    en_anchor = _find_non_header_anchor_in_window(from_page, window_end, "en_authors", anchors)
     if en_anchor:
         author_text = en_anchor.get("text", "")
-        surname = _extract_first_surname(author_text, is_ru=False)
-        if surname and _validate_surname_en(surname):
+        surname = _capitalize_surname(_extract_first_surname(author_text, is_ru=False))
+        if surname and _validate_surname_en(surname) and is_valid_surname(surname):
             return {
                 "first_author_surname": surname,
                 "first_author_surname_source": "en_authors",
@@ -298,11 +408,17 @@ def _extract_surname_for_research(
                 }
             }
 
-    # FAIL-FAST: Neither ru_authors nor valid en_authors found
+    # ── STEP C: text_block fallback ──────────────────────────────────────────
+    step_c_result = _extract_surname_from_text_blocks(from_page, anchors)
+    if step_c_result:
+        return step_c_result
+
+    # ── STEP D: deferred — keep exit-40 ─────────────────────────────────────
     _error_exit(
         40,
         "build_failed",
-        f"Research article starting at page {from_page}: no valid ru_authors or en_authors anchor found in window [{from_page}, {window_end}]"
+        f"Research article starting at page {from_page}: no valid surname via STEP A/B/C "
+        f"in window [{from_page}, {window_end}]. STEP D deferred pending OutputValidator scope change."
     )
 
 
@@ -350,17 +466,33 @@ def _verify_and_enrich_boundary_range(
     from_page_formatted = str(from_page).zfill(3)
     to_page_formatted = str(to_page).zfill(3)
 
-    # Material-specific enrichment
+    # ── TOC re-verification ─────────────────────────────────────────────────
+    # BoundaryDetector's contents_marker window=2 can leak "contents" to adjacent
+    # articles.  Re-verify: contents is valid only if a contents_marker anchor
+    # falls within THIS article's own page range.  No page numbers hardcoded.
+    effective_kind = material_kind
+    if material_kind == "contents":
+        if not is_toc_by_anchors(from_page, to_page, anchors):
+            effective_kind = "research"
+            sys.stderr.write(
+                f"[MetadataVerifier] {article_id}: reclassified contents→research "
+                f"(no contents_marker in [{from_page},{to_page}])\n"
+            )
+
+    # CRITICAL: OutputBuilder reads material_kind to gate filename validation.
+    # builder.py:104 exits-40 if material_kind="contents" with a research filename.
+    # Overwrite the field before it reaches OutputBuilder.
     enriched = {
         "article_id": article_id,
         "from_page": from_page,
         "to_page": to_page,
-        "material_kind": material_kind
+        "material_kind": effective_kind          # downstream sees effective
     }
+    if effective_kind != material_kind:
+        enriched["original_material_kind"] = material_kind   # audit trail
 
-    # Build expected_filename based on material_kind
-    if material_kind == "research":
-        # Extract surname from anchors
+    # ── Build expected_filename based on effective_kind ─────────────────────
+    if effective_kind == "research":
         surname_data = _extract_surname_for_research(from_page, anchors)
         surname = surname_data["first_author_surname"]
         sanitized_surname = _sanitize_surname(surname)
@@ -375,17 +507,17 @@ def _verify_and_enrich_boundary_range(
 
         expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_{sanitized_surname}.pdf"
 
-    elif material_kind == "contents":
+    elif effective_kind == "contents":
         expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Contents.pdf"
 
-    elif material_kind == "editorial":
+    elif effective_kind == "editorial":
         expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Editorial.pdf"
 
-    elif material_kind == "digest":
+    elif effective_kind == "digest":
         expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Digest.pdf"
 
     else:
-        _error_exit(50, "internal_error", f"Unhandled material_kind: {material_kind}")
+        _error_exit(50, "internal_error", f"Unhandled material_kind: {effective_kind}")
 
     enriched["expected_filename"] = expected_filename
 

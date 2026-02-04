@@ -1,138 +1,103 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# tests/manual/test_full_pipeline_mg_2025_12.sh
+#
+# Golden-test wrapper for Mg_2025-12.
+# Pipeline logic lives in tools/run_issue_pipeline.sh — this script only:
+#   1. Sets the Mg_2025-12 parameters.
+#   2. Invokes the universal pipeline runner.
+#   3. Runs post-run verification against the known-good golden export.
+# ---------------------------------------------------------------------------
 set -euo pipefail
 
-# Configuration
-export PY="${PY:-/srv/pdf-extractor/venv/bin/python}"
-export REPO="${REPO:-/opt/projects/pdf-extractor}"
-export RUN_DIR="${RUN_DIR:-/srv/pdf-extractor/runs/mg_2025_12_full_pipeline_manual}"
-export PDF_PATH="${PDF_PATH:-/srv/pdf-extractor/tmp/Mg_2025-12.pdf}"
-export ISSUE_ID="${ISSUE_ID:-mg_2025_12}"
-export ISSUE_PREFIX="${ISSUE_PREFIX:-Mg_2025-12}"
+REPO="${REPO:-/opt/projects/pdf-extractor}"
 
-echo "==================================================================="
-echo "Full Pipeline Sanity Run — mg_2025_12"
-echo "==================================================================="
-echo "RUN_DIR: $RUN_DIR"
-echo "PDF_PATH: $PDF_PATH"
-echo "ISSUE_ID: $ISSUE_ID"
-echo "ISSUE_PREFIX: $ISSUE_PREFIX"
-echo ""
+# ── Golden-test parameters (do not change) ────────────────────────────────
+JOURNAL_CODE="Mg"
+ISSUE_ID="mg_2025_12"
+PDF_PATH="/srv/pdf-extractor/tmp/Mg_2025-12.pdf"
+RUN_ID="golden_mg_2025_12"
 
-# Create run directories
-mkdir -p "$RUN_DIR"/{input,logs,outputs}
+# Known-good export used as the comparison baseline.
+GOLDEN_EXPORT="/srv/pdf-extractor/exports/Mg/2025/Mg_2025-12/exports/2026_01_27__21_53_35"
 
-# Prepare input JSON
-INPUT_JSON="$RUN_DIR/input/input_mg_2025_12.json"
-cat > "$INPUT_JSON" << EOF
-{
-  "issue_id": "$ISSUE_ID",
-  "journal_code": "Mg",
-  "pdf_path": "$PDF_PATH"
-}
-EOF
+# ── Run pipeline ───────────────────────────────────────────────────────────
+"${REPO}/tools/run_issue_pipeline.sh" \
+    --journal-code  "$JOURNAL_CODE" \
+    --issue-id      "$ISSUE_ID"      \
+    --pdf-path      "$PDF_PATH"      \
+    --run-id        "$RUN_ID"
 
-echo "Input JSON created: $INPUT_JSON"
-echo ""
+# ── Derive paths from run output ───────────────────────────────────────────
+RUN_DIR="/srv/pdf-extractor/runs/${ISSUE_ID}_${RUN_ID}"
+EXPORT_PATH=$(jq -r '.data.export_path // .export_path // empty' "${RUN_DIR}/outputs/07.json")
 
-# Function to run a component and check exit code
-run_component() {
-    local component_name="$1"
-    local component_script="$2"
-    local input_file="$3"
-    local output_file="$4"
-    local log_file="$5"
-
-    echo "-------------------------------------------------------------------"
-    echo "Running: $component_name"
-    echo "-------------------------------------------------------------------"
-
-    set +e
-    "$PY" "$REPO/$component_script" < "$input_file" > "$output_file" 2> "$log_file"
-    local rc=$?
-    set -e
-
-    if [ $rc -ne 0 ]; then
-        echo "❌ FAILED: $component_name (exit_code=$rc)"
-        echo "   Log: $log_file"
-        echo "   Output: $output_file"
-        exit $rc
-    fi
-
-    echo "✅ SUCCESS: $component_name (exit_code=0)"
-    echo "   Output: $output_file"
-    echo "   Log: $log_file"
-    echo ""
-}
-
-# Execute pipeline components sequentially
-run_component "InputValidator" \
-    "agents/input_validator/validator.py" \
-    "$INPUT_JSON" \
-    "$RUN_DIR/outputs/01_input_validator.json" \
-    "$RUN_DIR/logs/01_input_validator_stderr.log"
-
-run_component "PDFInspector" \
-    "agents/pdf_inspector/inspector.py" \
-    "$RUN_DIR/outputs/01_input_validator.json" \
-    "$RUN_DIR/outputs/02_pdf_inspector.json" \
-    "$RUN_DIR/logs/02_pdf_inspector_stderr.log"
-
-run_component "MetadataExtractor" \
-    "agents/metadata_extractor/extractor.py" \
-    "$RUN_DIR/outputs/02_pdf_inspector.json" \
-    "$RUN_DIR/outputs/03_metadata_extractor.json" \
-    "$RUN_DIR/logs/03_metadata_extractor_stderr.log"
-
-run_component "BoundaryDetector" \
-    "agents/boundary_detector/detector.py" \
-    "$RUN_DIR/outputs/03_metadata_extractor.json" \
-    "$RUN_DIR/outputs/04_boundary_detector.json" \
-    "$RUN_DIR/logs/04_boundary_detector_stderr.log"
-
-run_component "Splitter" \
-    "agents/splitter/splitter.py" \
-    "$RUN_DIR/outputs/04_boundary_detector.json" \
-    "$RUN_DIR/outputs/05_splitter.json" \
-    "$RUN_DIR/logs/05_splitter_stderr.log"
-
-# Merge BoundaryDetector + Splitter output_dir for MetadataVerifier
-SPLITTER_OUTPUT_DIR=$(jq -r '.data.output_dir' "$RUN_DIR/outputs/05_splitter.json")
-jq --arg splitter_dir "$SPLITTER_OUTPUT_DIR" '.data.splitter_output_dir = $splitter_dir' \
-    "$RUN_DIR/outputs/04_boundary_detector.json" \
-    > "$RUN_DIR/outputs/05_metadata_verifier_input.json"
-
-run_component "MetadataVerifier" \
-    "agents/metadata_verifier/verifier.py" \
-    "$RUN_DIR/outputs/05_metadata_verifier_input.json" \
-    "$RUN_DIR/outputs/06_metadata_verifier.json" \
-    "$RUN_DIR/logs/06_metadata_verifier_stderr.log"
-
-run_component "OutputBuilder" \
-    "agents/output_builder/builder.py" \
-    "$RUN_DIR/outputs/06_metadata_verifier.json" \
-    "$RUN_DIR/outputs/07_output_builder.json" \
-    "$RUN_DIR/logs/07_output_builder_stderr.log"
-
-run_component "OutputValidator" \
-    "agents/output_validator/validator.py" \
-    "$RUN_DIR/outputs/07_output_builder.json" \
-    "$RUN_DIR/outputs/08_output_validator.json" \
-    "$RUN_DIR/logs/08_output_validator_stderr.log"
-
-echo "==================================================================="
-echo "✅ FULL PIPELINE COMPLETED SUCCESSFULLY"
-echo "==================================================================="
-echo ""
-echo "Results:"
-echo "  - Outputs: $RUN_DIR/outputs/"
-echo "  - Logs: $RUN_DIR/logs/"
-echo ""
-
-# Extract export path from OutputBuilder output
-EXPORT_PATH=$(jq -r '.data.export_path // .export_path // empty' "$RUN_DIR/outputs/07_output_builder.json")
-if [ -n "$EXPORT_PATH" ]; then
-    echo "Export created at: $EXPORT_PATH"
-    echo ""
-    echo "Export structure:"
-    tree -L 2 "$EXPORT_PATH" || ls -lR "$EXPORT_PATH"
+if [[ -z "$EXPORT_PATH" || ! -d "$EXPORT_PATH" ]]; then
+    echo "[ERROR] export_path missing or not a directory: ${EXPORT_PATH}" >&2
+    exit 1
 fi
+
+# ── resolve_manifest: locate export_manifest.json ──────────────────────────
+# Checks manifest/ subdir first, then export root; fails clearly if absent.
+resolve_manifest() {
+    if   [[ -f "$1/manifest/export_manifest.json" ]]; then echo "$1/manifest/export_manifest.json"
+    elif [[ -f "$1/export_manifest.json"          ]]; then echo "$1/export_manifest.json"
+    else  echo "[ERROR] No export_manifest.json found under $1" >&2; exit 1
+    fi
+}
+
+# ── Post-run verification ──────────────────────────────────────────────────
+echo ""
+echo "==================================================================="
+echo "Golden-test verification — Mg_2025-12"
+echo "==================================================================="
+
+# 1. Verify all article PDFs against their declared checksums
+echo -n "  [1/3] sha256sum -c … "
+(cd "$EXPORT_PATH" && sha256sum -c checksums.sha256 >/dev/null) \
+    && echo "[OK]" \
+    || { echo "[FAILED]" >&2; exit 1; }
+
+# 2. Compare checksums.sha256 with golden (validates article PDF identity)
+echo -n "  [2/3] checksums vs golden … "
+if diff <(sort "$GOLDEN_EXPORT/checksums.sha256") <(sort "$EXPORT_PATH/checksums.sha256") >/dev/null; then
+    echo "[OK]"
+else
+    echo "[FAILED]" >&2
+    diff "$GOLDEN_EXPORT/checksums.sha256" "$EXPORT_PATH/checksums.sha256" >&2 || true
+    exit 1
+fi
+
+# 3. Normalized manifest diff
+#    Strips all per-run timestamp fields before comparing:
+#      .export_path, .export_id, .export_timestamp_utc   — top-level
+#      .articles[].export_path                           — per-article
+#    Remaining fields (article_id, sha256, filename, bytes, material_kind …)
+#    are compared after key-sorting for a stable diff.
+echo -n "  [3/3] manifest (normalized) … "
+GOLDEN_MANIFEST=$(resolve_manifest "$GOLDEN_EXPORT")
+NEW_MANIFEST=$(resolve_manifest "$EXPORT_PATH")
+_JQ_STRIP='del(.export_path, .export_id, .export_timestamp_utc, .articles[].export_path)'
+if diff \
+    <(jq "$_JQ_STRIP" "$GOLDEN_MANIFEST" | jq -S .) \
+    <(jq "$_JQ_STRIP" "$NEW_MANIFEST"    | jq -S .) \
+    >/dev/null; then
+    echo "[OK]"
+else
+    echo "[FAILED]" >&2
+    diff \
+        <(jq "$_JQ_STRIP" "$GOLDEN_MANIFEST" | jq -S .) \
+        <(jq "$_JQ_STRIP" "$NEW_MANIFEST"    | jq -S .) \
+        >&2 || true
+    exit 1
+fi
+
+# ── Show export structure ──────────────────────────────────────────────────
+echo ""
+echo "  Export structure:"
+tree -L 2 "$EXPORT_PATH" 2>/dev/null || ls -lR "$EXPORT_PATH"
+
+echo ""
+echo "==================================================================="
+echo "[OK] Golden test PASSED — Mg_2025-12"
+echo "==================================================================="
