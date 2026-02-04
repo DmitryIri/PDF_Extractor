@@ -23,6 +23,8 @@ logs/
 .DS_Store
 .idea/
 .vscode/
+# === Claude Code skill backup artifacts ===
+.claude/skills/**/*.bak_*
 # === Claude Code temporary files ===
 conversation-*.txt
 *-you-are-in-doc-editing-mode-*.txt
