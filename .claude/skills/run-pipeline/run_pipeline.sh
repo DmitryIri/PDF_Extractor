@@ -101,7 +101,7 @@ write_audit_json() {
   python3 - <<PY
 import json, os, time
 data = {
-  "ts_utc": "${ts_utc()}",
+  "ts_utc": "$(ts_utc)",
   "status": "${status}",
   "message": "${message}",
   "branch": os.popen("git branch --show-current").read().strip(),
@@ -185,7 +185,7 @@ write_pregate_audit_json() {
 import json, os
 steps = json.loads('${steps_json}')
 data = {
-  "ts_utc": "${ts_utc()}",
+  "ts_utc": "$(ts_utc)",
   "status": "${status}",
   "message": "${message}",
   "branch": os.popen("git branch --show-current").read().strip(),
@@ -227,11 +227,11 @@ run_core_tests() {
   STEPS_LOG=()
 
   # ── Step C1: pytest unit/ ─────────────────────────────────────────────
-  echo "[CORE 1/6] python -m pytest tests/unit/ -q …"
-  if python -m pytest tests/unit/ -q 2>&1; then
-    STEPS_LOG+=('{"step":"C1","cmd":"python -m pytest tests/unit/ -q","result":"pass"}')
+  echo "[CORE 1/6] python3 -m pytest tests/unit/ -q …"
+  if python3 -m pytest tests/unit/ -q 2>&1; then
+    STEPS_LOG+=('{"step":"C1","cmd":"python3 -m pytest tests/unit/ -q","result":"pass"}')
   else
-    STEPS_LOG+=('{"step":"C1","cmd":"python -m pytest tests/unit/ -q","result":"fail"}')
+    STEPS_LOG+=('{"step":"C1","cmd":"python3 -m pytest tests/unit/ -q","result":"fail"}')
     echo "[CORE 1/6] FAILED" >&2
     return 2
   fi
@@ -267,11 +267,11 @@ run_core_tests() {
   fi
 
   # ── Step C5: output validator unit (via pytest; it uses unittest internally) ─
-  echo "[CORE 5/6] python -m pytest tests/test_output_validator_unit.py -q …"
-  if python -m pytest tests/test_output_validator_unit.py -q 2>&1; then
-    STEPS_LOG+=('{"step":"C5","cmd":"python -m pytest tests/test_output_validator_unit.py -q","result":"pass"}')
+  echo "[CORE 5/6] python3 -m pytest tests/test_output_validator_unit.py -q …"
+  if python3 -m pytest tests/test_output_validator_unit.py -q 2>&1; then
+    STEPS_LOG+=('{"step":"C5","cmd":"python3 -m pytest tests/test_output_validator_unit.py -q","result":"pass"}')
   else
-    STEPS_LOG+=('{"step":"C5","cmd":"python -m pytest tests/test_output_validator_unit.py -q","result":"fail"}')
+    STEPS_LOG+=('{"step":"C5","cmd":"python3 -m pytest tests/test_output_validator_unit.py -q","result":"fail"}')
     echo "[CORE 5/6] FAILED" >&2
     return 2
   fi
@@ -284,7 +284,7 @@ run_core_tests() {
     echo "[CORE 6/6] FAILED: golden fixtures missing (preflight)" >&2
     return 2
   fi
-  echo "[CORE 6/6] cat golden_tests/mg_2025_12_boundaries.json | python scripts/verify_boundary_detector_golden.py …"
+  echo "[CORE 6/6] cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py …"
   if cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py 2>&1; then
     STEPS_LOG+=('{"step":"C6","cmd":"cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py","result":"pass"}')
   else
