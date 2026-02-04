@@ -75,6 +75,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Runtime python (must have pytest + fitz). Honour PY env var; same default as
+# tools/run_issue_pipeline.sh line 23.
+PY="${PY:-/srv/pdf-extractor/venv/bin/python}"
+
 ts_utc() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 
 ensure_audit_dir() {
@@ -228,7 +232,7 @@ run_core_tests() {
 
   # ── Step C1: pytest unit/ ─────────────────────────────────────────────
   echo "[CORE 1/6] python3 -m pytest tests/unit/ -q …"
-  if python3 -m pytest tests/unit/ -q 2>&1; then
+  if "$PY" -m pytest tests/unit/ -q 2>&1; then
     STEPS_LOG+=('{"step":"C1","cmd":"python3 -m pytest tests/unit/ -q","result":"pass"}')
   else
     STEPS_LOG+=('{"step":"C1","cmd":"python3 -m pytest tests/unit/ -q","result":"fail"}')
@@ -268,7 +272,7 @@ run_core_tests() {
 
   # ── Step C5: output validator unit (via pytest; it uses unittest internally) ─
   echo "[CORE 5/6] python3 -m pytest tests/test_output_validator_unit.py -q …"
-  if python3 -m pytest tests/test_output_validator_unit.py -q 2>&1; then
+  if "$PY" -m pytest tests/test_output_validator_unit.py -q 2>&1; then
     STEPS_LOG+=('{"step":"C5","cmd":"python3 -m pytest tests/test_output_validator_unit.py -q","result":"pass"}')
   else
     STEPS_LOG+=('{"step":"C5","cmd":"python3 -m pytest tests/test_output_validator_unit.py -q","result":"fail"}')
@@ -285,7 +289,7 @@ run_core_tests() {
     return 2
   fi
   echo "[CORE 6/6] cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py …"
-  if cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py 2>&1; then
+  if cat golden_tests/mg_2025_12_boundaries.json | "$PY" scripts/verify_boundary_detector_golden.py 2>&1; then
     STEPS_LOG+=('{"step":"C6","cmd":"cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py","result":"pass"}')
   else
     STEPS_LOG+=('{"step":"C6","cmd":"cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py","result":"fail"}')
