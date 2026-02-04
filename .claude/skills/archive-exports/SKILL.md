@@ -89,7 +89,18 @@ sha256sum "$DEST_DIR/"* > "_audit/claude_code/reports/sha256_exports_${SESSION_I
 - Deterministic regardless of working directory
 - Easier to audit (absolute paths in manifest)
 
-### 6. Show evidence
+### 6. Verify sha256 manifest (gate)
+
+**CRITICAL**: Run from repo root. Manifest paths are repo-root-anchored. Do NOT `cd` into the archive directory before running this check.
+
+```bash
+REPORT="_audit/claude_code/reports/sha256_exports_${SESSION_ID}.txt"
+sha256sum -c "$REPORT"
+```
+
+**Gate rule**: If any line shows `FAILED` — stop immediately. Do NOT proceed to step 7. Report the failure to the user with the exact failing line(s).
+
+### 7. Show evidence
 
 ```bash
 echo "=== Archived files ==="
@@ -100,7 +111,7 @@ echo "=== SHA256 manifest (first 40 lines) ==="
 sed -n '1,40p' "_audit/claude_code/reports/sha256_exports_${SESSION_ID}.txt"
 ```
 
-### 7. List remaining root files and request confirmation
+### 8. List remaining root files and request confirmation
 
 After successful copy:
 
@@ -222,6 +233,6 @@ d4e5f6...  _audit/claude_code/exports/2026_01_22__15_52_30/2026-01-21-task-defau
 
 ---
 
-**Version**: 1.0
-**Date**: 2026-01-22
-**Tested**: No (awaiting first run)
+**Version**: 1.1
+**Date**: 2026-02-04
+**Tested**: Yes (SESSION_ID 2026_02_04__13_13_14, 5/5 OK)
