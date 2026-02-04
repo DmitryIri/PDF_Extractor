@@ -59,6 +59,24 @@ Ask user to run:
 
 ### Step B — Draft Session Closure Log (generate content here, automated)
 
+#### B0) Short-circuit: closure already done? (automated)
+
+Claude Code MUST execute before any other Step B work:
+
+```bash
+TODAY=$(date -u +%Y_%m_%d)
+ls docs/state/session_closure_log_${TODAY}_v_*.md 2>/dev/null || true
+git status -sb
+```
+
+**Decision rule:**
+- If at least one `session_closure_log_<today>_v_*.md` exists, AND
+- `git status -sb` is clean (output is exactly `## <branch>`, no other lines)
+
+Then: output `"Closure log already current for <today>. Skipping draft."` and proceed directly to **Step C**. Do not execute B1–B3.
+
+Otherwise: continue with B1 as normal.
+
 #### B1) Determine destination path and next version (automated)
 Claude Code MUST execute (prefer this order):
 - test -d docs/state && echo "docs/state: OK" || echo "docs/state: MISSING"
