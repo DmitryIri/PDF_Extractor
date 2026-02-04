@@ -1,0 +1,28 @@
+{
+  "issue_id": "mg_2025_12",
+  "pdf_path": "/srv/pdf-extractor/tmp/Mg_2025-12.pdf",
+  "run_id": "test_run_001",
+  "article_pdfs": [
+    {
+      "article_id": "a01",
+      "from_page": 5,
+      "to_page": 5,
+      "first_author_surname": "Barysheva",
+      "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a01.pdf"
+    },
+    {
+      "article_id": "a02",
+      "from_page": 6,
+      "to_page": 15,
+      "first_author_surname": "Andreeva",
+      "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a02.pdf"
+    },
+    {
+      "article_id": "a03",
+      "from_page": 16,
+      "to_page": 27,
+      "first_author_surname": "Korneva",
+      "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a03.pdf"
+    }
+  ]
+}

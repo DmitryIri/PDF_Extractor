@@ -1,0 +1,39 @@
+{
+  "journal_code": "Mg",
+  "issue_prefix": "Mg_2025-12",
+  "source_pdf": {
+    "path": "/srv/pdf-extractor/tmp/Mg_2025-12.pdf"
+  },
+  "run": {
+    "run_id": "test_run_001"
+  },
+  "total_articles": 2,
+  "articles": [
+    {
+      "article_id": "a01",
+      "from_page": 5,
+      "to_page": 5,
+      "material_kind": "research",
+      "first_author_surname": "Barysheva",
+      "expected_filename": "Mg_2025-12_005-005_Barysheva.pdf",
+      "splitter_output": {
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a01.pdf",
+        "bytes": 123456,
+        "sha256": "dummy_sha256_a01"
+      }
+    },
+    {
+      "article_id": "a02",
+      "from_page": 6,
+      "to_page": 15,
+      "material_kind": "research",
+      "first_author_surname": "Andreeva",
+      "expected_filename": "Mg_2025-12_006-015_Andreeva.pdf",
+      "splitter_output": {
+        "path": "/srv/pdf-extractor/tmp/articles/mg_2025_12_a02.pdf",
+        "bytes": 234567,
+        "sha256": "dummy_sha256_a02"
+      }
+    }
+  ]
+}

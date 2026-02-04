@@ -79,6 +79,7 @@ if [ -f "$TEST_PDF_A01" ] && [ -f "$TEST_PDF_A02" ]; then
       "article_id": "a01",
       "from_page": 5,
       "to_page": 5,
+      "material_kind": "research",
       "first_author_surname": "Barysheva",
       "expected_filename": "Mg_2025-12_005-005_Barysheva.pdf",
       "splitter_output": {
@@ -91,6 +92,7 @@ if [ -f "$TEST_PDF_A01" ] && [ -f "$TEST_PDF_A02" ]; then
       "article_id": "a02",
       "from_page": 6,
       "to_page": 15,
+      "material_kind": "research",
       "first_author_surname": "Andreeva",
       "expected_filename": "Mg_2025-12_006-015_Andreeva.pdf",
       "splitter_output": {
@@ -183,6 +185,7 @@ INPUT_JSON_MISSING_PDF=$(cat <<'EOF'
       "article_id": "a99",
       "from_page": 1,
       "to_page": 1,
+      "material_kind": "research",
       "first_author_surname": "NonExistent",
       "expected_filename": "Mg_2025-12_001-001_NonExistent.pdf",
       "splitter_output": {

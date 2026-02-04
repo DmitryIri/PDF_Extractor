@@ -34,6 +34,9 @@ conversation-*.txt
 # Allow tracking of normative JSON schemas and contracts
 !docs/
 !docs/**/*.json
+# Allow test fixture JSON
+!tests/fixtures/
+!tests/fixtures/*.json
 # Allow golden test artifacts
 !golden_tests/
 !golden_tests/**/*.json
