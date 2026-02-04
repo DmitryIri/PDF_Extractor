@@ -7,7 +7,8 @@ set -euo pipefail
 #
 # IMPORTANT:
 # - This entrypoint STILL DOES NOT execute the pipeline.
-# - Adds observer-only post-gate mode: --post-gate-only --run-dir <RUN_DIR>
+# - Modes: --post-gate-only --run-dir <RUN_DIR>   (observer)
+#          --pre-gate-only                         (repo health + CORE tests)
 # - No jq usage. No cp/mv usage. No allowlist changes.
 
 usage() {
@@ -23,9 +24,16 @@ Usage:
       - verifies sha256sum -c checksums.sha256 in export_path
       - writes audit JSON to _audit/claude_code/reports/run_pipeline_{run_id}.json
 
+  run_pipeline.sh --pre-gate-only [--run-id <id>]
+    Full pre-gate (no pipeline execution):
+      - branch == main, working tree clean
+      - export-artifact scan (known patterns in repo root)
+      - CORE test suite: pytest unit/ + 3 golden shell scripts + boundary golden verifier
+      - writes audit JSON to _audit/claude_code/reports/run_pipeline_{run_id}.json
+
 Exit codes:
-  0  success (post-gate-only)
-  2  usage/pre-gate failure / skeleton not implemented path
+  0  success
+  2  usage / pre-gate failure / skeleton not-implemented path
   3  post-gate failure
 USAGE
 }
@@ -33,6 +41,7 @@ USAGE
 ISSUE=""
 RUN_ID=""
 POST_GATE_ONLY="0"
+PRE_GATE_ONLY="0"
 RUN_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -43,6 +52,8 @@ while [[ $# -gt 0 ]]; do
       RUN_ID="${2:-}"; shift 2;;
     --post-gate-only)
       POST_GATE_ONLY="1"; shift 1;;
+    --pre-gate-only)
+      PRE_GATE_ONLY="1"; shift 1;;
     --run-dir)
       RUN_DIR="${2:-}"; shift 2;;
     -h|--help)
@@ -151,6 +162,180 @@ preflight_repo() {
   fi
 }
 
+# Pre-gate audit writer (python3; no jq).
+# Args: path status message steps_json
+# steps_json is a single-quoted JSON array string built by the caller.
+write_pregate_audit_json() {
+  local path="$1"
+  local status="$2"
+  local message="$3"
+  local steps_json="$4"
+
+  python3 - <<PY
+import json, os
+steps = json.loads('${steps_json}')
+data = {
+  "ts_utc": "${ts_utc()}",
+  "status": "${status}",
+  "message": "${message}",
+  "branch": os.popen("git branch --show-current").read().strip(),
+  "run_id": "${RUN_ID}",
+  "mode": "pre-gate-only",
+  "steps": steps,
+}
+os.makedirs(os.path.dirname("${path}"), exist_ok=True)
+with open("${path}", "w", encoding="utf-8") as f:
+  json.dump(data, f, ensure_ascii=False, indent=2)
+PY
+}
+
+# Export-artifact scan (known /export patterns only, repo root).
+# Returns 0 if clean, 1 if artifacts found.
+scan_exports_in_root() {
+  local count
+  count="$(find . -maxdepth 1 -type f \( \
+    -name "conversation-*.txt" \
+    -o -name "*-task-*.txt" \
+    -o -name "*-claude-code-*.txt" \
+    -o -name "20??-??-??-*.txt" \
+  \) | wc -l | tr -d ' ')"
+  if [[ "$count" -gt 0 ]]; then
+    echo "Pre-gate failed: ${count} export artifact(s) in repo root. Run /archive-exports first." >&2
+    return 1
+  fi
+  return 0
+}
+
+# CORE test suite runner.
+# Discovers and runs the exact set declared by pdf-golden-tests SKILL.md.
+# Each step is fail-fast: first failure stops the suite.
+# Returns 0 if all pass; 2 on any failure.
+# Populates the global STEPS_LOG array with per-step status entries.
+declare -a STEPS_LOG=()
+
+run_core_tests() {
+  STEPS_LOG=()
+
+  # ── Step C1: pytest unit/ ─────────────────────────────────────────────
+  echo "[CORE 1/6] python -m pytest tests/unit/ -q …"
+  if python -m pytest tests/unit/ -q 2>&1; then
+    STEPS_LOG+=('{"step":"C1","cmd":"python -m pytest tests/unit/ -q","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C1","cmd":"python -m pytest tests/unit/ -q","result":"fail"}')
+    echo "[CORE 1/6] FAILED" >&2
+    return 2
+  fi
+
+  # ── Step C2: material classification golden ──────────────────────────
+  echo "[CORE 2/6] bash tests/test_material_classification_golden.sh …"
+  if bash tests/test_material_classification_golden.sh 2>&1; then
+    STEPS_LOG+=('{"step":"C2","cmd":"bash tests/test_material_classification_golden.sh","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C2","cmd":"bash tests/test_material_classification_golden.sh","result":"fail"}')
+    echo "[CORE 2/6] FAILED" >&2
+    return 2
+  fi
+
+  # ── Step C3: output builder ───────────────────────────────────────────
+  echo "[CORE 3/6] bash tests/test_output_builder.sh …"
+  if bash tests/test_output_builder.sh 2>&1; then
+    STEPS_LOG+=('{"step":"C3","cmd":"bash tests/test_output_builder.sh","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C3","cmd":"bash tests/test_output_builder.sh","result":"fail"}')
+    echo "[CORE 3/6] FAILED" >&2
+    return 2
+  fi
+
+  # ── Step C4: output validator integration ────────────────────────────
+  echo "[CORE 4/6] bash tests/test_output_validator_integration.sh …"
+  if bash tests/test_output_validator_integration.sh 2>&1; then
+    STEPS_LOG+=('{"step":"C4","cmd":"bash tests/test_output_validator_integration.sh","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C4","cmd":"bash tests/test_output_validator_integration.sh","result":"fail"}')
+    echo "[CORE 4/6] FAILED" >&2
+    return 2
+  fi
+
+  # ── Step C5: output validator unit (via pytest; it uses unittest internally) ─
+  echo "[CORE 5/6] python -m pytest tests/test_output_validator_unit.py -q …"
+  if python -m pytest tests/test_output_validator_unit.py -q 2>&1; then
+    STEPS_LOG+=('{"step":"C5","cmd":"python -m pytest tests/test_output_validator_unit.py -q","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C5","cmd":"python -m pytest tests/test_output_validator_unit.py -q","result":"fail"}')
+    echo "[CORE 5/6] FAILED" >&2
+    return 2
+  fi
+
+  # ── Step C6: BoundaryDetector golden regression (data-only) ──────────
+  # Preflight: both golden fixtures must exist.
+  if [[ ! -f golden_tests/mg_2025_12_boundaries.json ]] || \
+     [[ ! -f golden_tests/mg_2025_12_article_starts.json ]]; then
+    STEPS_LOG+=('{"step":"C6","cmd":"preflight: golden fixtures","result":"fail","reason":"golden fixtures missing"}')
+    echo "[CORE 6/6] FAILED: golden fixtures missing (preflight)" >&2
+    return 2
+  fi
+  echo "[CORE 6/6] cat golden_tests/mg_2025_12_boundaries.json | python scripts/verify_boundary_detector_golden.py …"
+  if cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py 2>&1; then
+    STEPS_LOG+=('{"step":"C6","cmd":"cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"C6","cmd":"cat golden_tests/mg_2025_12_boundaries.json | python3 scripts/verify_boundary_detector_golden.py","result":"fail"}')
+    echo "[CORE 6/6] FAILED" >&2
+    return 2
+  fi
+
+  return 0
+}
+
+# Build a JSON array string from the STEPS_LOG array.
+steps_log_to_json() {
+  local ifs_save="$IFS"
+  IFS=","
+  echo "[${STEPS_LOG[*]}]"
+  IFS="$ifs_save"
+}
+
+pre_gate_only() {
+  ensure_audit_dir
+  local rid="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
+  RUN_ID="${rid}"
+
+  # preflight_repo already ran in main(); if we're here it passed.
+  STEPS_LOG=('{"step":"L1","cmd":"branch==main + clean tree","result":"pass"}')
+
+  # Export scan
+  echo "[PRE-GATE] scanning for export artifacts in root …"
+  if scan_exports_in_root; then
+    STEPS_LOG+=('{"step":"L2","cmd":"export artifact scan","result":"pass"}')
+  else
+    STEPS_LOG+=('{"step":"L2","cmd":"export artifact scan","result":"fail"}')
+    local apath
+    apath="$(audit_path_for "${rid}")"
+    write_pregate_audit_json "${apath}" "fail" "pre-gate: export artifacts in root" "$(steps_log_to_json)"
+    echo "Audit: ${apath}" >&2
+    return 2
+  fi
+
+  # CORE tests
+  echo "[PRE-GATE] running CORE test suite …"
+  if run_core_tests; then
+    echo "[PRE-GATE] CORE suite: all passed"
+  else
+    local apath
+    apath="$(audit_path_for "${rid}")"
+    write_pregate_audit_json "${apath}" "fail" "pre-gate: CORE test suite failure" "$(steps_log_to_json)"
+    echo "Audit: ${apath}" >&2
+    return 2
+  fi
+
+  # Success
+  local apath
+  apath="$(audit_path_for "${rid}")"
+  write_pregate_audit_json "${apath}" "ok" "pre-gate-only: all checks passed" "$(steps_log_to_json)"
+  echo "Pre-gate OK"
+  echo "Audit: ${apath}"
+  return 0
+}
+
 post_gate_only() {
   # minimal checks: run-dir exists, outputs/08.json exists
   if [[ -z "${RUN_DIR}" ]]; then
@@ -213,6 +398,11 @@ post_gate_only() {
 main() {
   preflight_repo || exit 2
 
+  if [[ "${PRE_GATE_ONLY}" == "1" ]]; then
+    pre_gate_only || exit 2
+    exit 0
+  fi
+
   if [[ "${POST_GATE_ONLY}" == "1" ]]; then
     post_gate_only || {
       ensure_audit_dir
@@ -236,7 +426,7 @@ main() {
   fi
 
   ensure_audit_dir
-  echo "run-pipeline skeleton: contract committed, post-gate-only implemented."
+  echo "run-pipeline skeleton: contract committed, pre-gate-only + post-gate-only implemented."
   echo "NOT IMPLEMENTED: pipeline execution is intentionally disabled in this step."
   echo "Issue: ${ISSUE}"
   echo "Run-ID: ${RUN_ID:-<unset>}"
