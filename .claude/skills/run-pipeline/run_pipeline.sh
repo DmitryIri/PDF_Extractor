@@ -5,55 +5,65 @@ set -euo pipefail
 # Contract: .claude/skills/run-pipeline/SKILL.md (v_1_0)
 # Design source of truth: docs/governance/task_specs/run_pipeline_design_v_1_0.md (v_1_0)
 #
-# IMPORTANT:
-# - This entrypoint STILL DOES NOT execute the pipeline.
-# - Modes: --post-gate-only --run-dir <RUN_DIR>   (observer)
-#          --pre-gate-only                         (repo health + CORE tests)
-# - No jq usage. No cp/mv usage. No allowlist changes.
+# Modes:
+#   --execute --issue-id <ID> --journal-code <JC> --pdf-path <P> [--run-id <R>]
+#       Full gated run: pre-gate → pipeline → post-gate → audit
+#   --pre-gate-only  [--run-id <R>]      Repo health + CORE tests only
+#   --post-gate-only --run-dir <RUN_DIR> [--run-id <R>]  Observer validation only
+#
+# Constraints: no jq, no cp/mv, no new allowlist entries.
 
 usage() {
   cat <<'USAGE'
 Usage:
-  run_pipeline.sh --issue <issue_json_or_path> [--run-id <id>]
-    (skeleton; does NOT execute pipeline)
+  run_pipeline.sh --execute \
+      --issue-id <ID> --journal-code <JC> --pdf-path <P> [--run-id <R>]
+    Full gated pipeline run:
+      pre-gate (branch + clean tree + export scan + CORE tests)
+      → tools/run_issue_pipeline.sh (explicit --run-id, no stdout parsing)
+      → post-gate (T=L=E + sha256, observer on outputs/08.json)
+      → audit JSON in _audit/claude_code/reports/
 
-  run_pipeline.sh --post-gate-only --run-dir <RUN_DIR> [--run-id <id>]
-    Observer-only validation:
-      - reads export_path from outputs/08.json (.data.export_path)
-      - enforces T=L=E (T=total_articles, L=len(articles), E=pdf count under export_path)
-      - verifies sha256sum -c checksums.sha256 in export_path
-      - writes audit JSON to _audit/claude_code/reports/run_pipeline_{run_id}.json
+  run_pipeline.sh --pre-gate-only [--run-id <R>]
+    Repo health + CORE test suite only (no pipeline execution).
 
-  run_pipeline.sh --pre-gate-only [--run-id <id>]
-    Full pre-gate (no pipeline execution):
-      - branch == main, working tree clean
-      - export-artifact scan (known patterns in repo root)
-      - CORE test suite: pytest unit/ + 3 golden shell scripts + boundary golden verifier
-      - writes audit JSON to _audit/claude_code/reports/run_pipeline_{run_id}.json
+  run_pipeline.sh --post-gate-only --run-dir <RUN_DIR> [--run-id <R>]
+    Observer validation only (reads existing run artefacts).
 
 Exit codes:
   0  success
-  2  usage / pre-gate failure / skeleton not-implemented path
+  2  usage / pre-gate / input-validation failure
   3  post-gate failure
+  N  pipeline exit code forwarded (non-zero, not 0/2/3)
 USAGE
 }
 
-ISSUE=""
-RUN_ID=""
-POST_GATE_ONLY="0"
+EXECUTE="0"
 PRE_GATE_ONLY="0"
+POST_GATE_ONLY="0"
+ISSUE_ID=""
+JOURNAL_CODE=""
+PDF_PATH=""
+RUN_ID=""
 RUN_DIR=""
+RUNS_ROOT="${RUNS_ROOT:-/srv/pdf-extractor/runs}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --issue)
-      ISSUE="${2:-}"; shift 2;;
-    --run-id)
-      RUN_ID="${2:-}"; shift 2;;
-    --post-gate-only)
-      POST_GATE_ONLY="1"; shift 1;;
+    --execute)
+      EXECUTE="1"; shift 1;;
     --pre-gate-only)
       PRE_GATE_ONLY="1"; shift 1;;
+    --post-gate-only)
+      POST_GATE_ONLY="1"; shift 1;;
+    --issue-id)
+      ISSUE_ID="${2:-}"; shift 2;;
+    --journal-code)
+      JOURNAL_CODE="${2:-}"; shift 2;;
+    --pdf-path)
+      PDF_PATH="${2:-}"; shift 2;;
+    --run-id)
+      RUN_ID="${2:-}"; shift 2;;
     --run-dir)
       RUN_DIR="${2:-}"; shift 2;;
     -h|--help)
@@ -395,6 +405,74 @@ post_gate_only() {
   return 0
 }
 
+# Full gated execute: pre-gate → pipeline → post-gate → audit.
+# Requires ISSUE_ID, JOURNAL_CODE, PDF_PATH set by caller (main validates).
+# Generates or uses RUN_ID; reconstructs RUN_DIR deterministically.
+execute_pipeline() {
+  # ── Generate RUN_ID if not supplied (match pipeline's own default format) ─
+  if [[ -z "${RUN_ID}" ]]; then
+    RUN_ID="manual_$(date -u +%Y%m%d_%H%M%S)"
+  fi
+
+  ensure_audit_dir
+
+  # ── Pre-gate (reuse existing function; it writes its own audit on fail) ───
+  echo "[EXECUTE] running pre-gate …"
+  if ! pre_gate_only; then
+    echo "[EXECUTE] pre-gate FAILED; pipeline not started." >&2
+    exit 2
+  fi
+
+  # ── Invoke pipeline (single allowed entrypoint, explicit args) ────────────
+  echo "[EXECUTE] launching tools/run_issue_pipeline.sh …"
+  echo "  --journal-code  ${JOURNAL_CODE}"
+  echo "  --issue-id      ${ISSUE_ID}"
+  echo "  --pdf-path      ${PDF_PATH}"
+  echo "  --run-id        ${RUN_ID}"
+
+  set +e
+  tools/run_issue_pipeline.sh \
+    --journal-code  "${JOURNAL_CODE}" \
+    --issue-id      "${ISSUE_ID}" \
+    --pdf-path      "${PDF_PATH}" \
+    --run-id        "${RUN_ID}"
+  local pipeline_rc=$?
+  set -e
+
+  if [[ ${pipeline_rc} -ne 0 ]]; then
+    echo "[EXECUTE] pipeline exited ${pipeline_rc}" >&2
+    # Best-effort audit: record failure with known fields, no post-gate values.
+    local apath
+    apath="$(audit_path_for "${RUN_ID}")"
+    write_audit_json "${apath}" "fail" \
+      "pipeline exited ${pipeline_rc}" \
+      "${RUNS_ROOT}/${ISSUE_ID}_${RUN_ID}" "" "" "" "" "not-run"
+    echo "Audit: ${apath}" >&2
+    exit ${pipeline_rc}
+  fi
+
+  # ── Reconstruct RUN_DIR deterministically (same formula as pipeline) ──────
+  RUN_DIR="${RUNS_ROOT}/${ISSUE_ID}_${RUN_ID}"
+  echo "[EXECUTE] pipeline OK. RUN_DIR=${RUN_DIR}"
+
+  # ── Post-gate (reuse existing function; RUN_DIR is now set) ───────────────
+  echo "[EXECUTE] running post-gate …"
+  if ! post_gate_only; then
+    echo "[EXECUTE] post-gate FAILED." >&2
+    # post_gate_only does not write audit on its own failure path here;
+    # write best-effort audit with what we know.
+    local apath
+    apath="$(audit_path_for "${RUN_ID}")"
+    write_audit_json "${apath}" "fail" \
+      "post-gate failure after successful pipeline run" \
+      "${RUN_DIR}" "" "" "" "" "fail"
+    echo "Audit: ${apath}" >&2
+    exit 3
+  fi
+
+  echo "[EXECUTE] full gated run complete."
+}
+
 main() {
   preflight_repo || exit 2
 
@@ -418,18 +496,25 @@ main() {
     exit 0
   fi
 
-  # Skeleton non-executing default path
-  if [[ -z "${ISSUE}" ]]; then
-    echo "Missing required --issue" >&2
-    usage
-    exit 2
+  # ── Execute mode ──────────────────────────────────────────────────────────
+  if [[ "${EXECUTE}" == "1" ]]; then
+    # Validate required inputs for pipeline invocation
+    local _missing=()
+    [[ -z "${ISSUE_ID}"     ]] && _missing+=(--issue-id)
+    [[ -z "${JOURNAL_CODE}" ]] && _missing+=(--journal-code)
+    [[ -z "${PDF_PATH}"     ]] && _missing+=(--pdf-path)
+    if [[ ${#_missing[@]} -gt 0 ]]; then
+      echo "Missing required args for --execute: ${_missing[*]}" >&2
+      usage
+      exit 2
+    fi
+    execute_pipeline
+    exit 0
   fi
 
-  ensure_audit_dir
-  echo "run-pipeline skeleton: contract committed, pre-gate-only + post-gate-only implemented."
-  echo "NOT IMPLEMENTED: pipeline execution is intentionally disabled in this step."
-  echo "Issue: ${ISSUE}"
-  echo "Run-ID: ${RUN_ID:-<unset>}"
+  # ── No mode flag: print usage and stop ────────────────────────────────────
+  echo "No mode specified. Use --execute, --pre-gate-only, or --post-gate-only." >&2
+  usage
   exit 2
 }
 
