@@ -103,6 +103,17 @@
 - Документ доведён до Claude-ready состояния (физические пути + сценарий Claude Code Bootstrap).
 - Снят блокер для начала работы в Claude Code.
 
+## 2026-02-04
+- **Universal Surname Selection Fix complete (Plan-03):**
+  - MetadataVerifier v1.2.0 → v1.3.0: STEP A→B→C surname extraction with running-header filter, 2-initial byline regex, HARD/SOFT stopwords, GOST rule 3 (ый→yi), TOC re-verification by anchors
+  - New module: `shared/author_surname_normalizer.py` — pure functions (is_running_header, is_valid_surname, is_toc_by_anchors, looks_like_author_byline)
+  - Unit tests: `tests/unit/test_author_surname_normalizer.py` — 88 tests, all pass
+  - Policy: `docs/policies/filename_generation_policy_v_1_1.md` (MINOR bump)
+  - DEVIATION from Plan-03: N=6 scan counts byline-pattern candidates only (not all text_blocks); running headers and structural noise are transparent to the limit
+  - Acceptance: Mg golden regression PASS (byte-for-byte); Mh_2026-01 all 9 filenames correct; zero header-surnames
+  - Commits: see feat(surname-fix) + docs commits below
+  - **Phase 3 bootstrap stub created:** `docs/governance/task_specs/task_spec_phase_3_ui_db_bootstrap_v_1_0.md`
+
 ## Material Classification Implementation & RU-Journal Filename Policy (2026-01-26)
 
 **Session Context:** Four-phase implementation fixing filename generation for RU-journals (Mg_2025-12 issue)
