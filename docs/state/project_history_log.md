@@ -206,3 +206,14 @@
 **Documentation:**
 - Policy: docs/policies/filename_generation_policy_v_1_0.md (referenced in implementation)
 - GATE-0 Proof: GATE0_PROOF.md
+
+## 2026-02-06
+- **Grenaderova article split bugfix (Mg_2026-01):**
+  - Issue: Article "Grenaderova" (pages 27-36) incorrectly split into two files (027-027, 028-036)
+  - Root cause: BoundaryDetector dedup ratio calculation bug — compared only first typography candidate per page (92/37 = 2.486 > 2.0 threshold) instead of sum of all candidates
+  - Evidence: RUN_DIR artifacts (03.json anchors, 04.json boundaries) showed multi-line RU title (4 candidates: 37,35,54,35 chars) vs EN title (2 candidates: 92,72 chars)
+  - Fix: detector.py lines 241-244 — changed dedup to sum all candidates per page (161 vs 164 chars, ratio 1.019 < 2.0 ✅)
+  - Commit: 55e0f08 — fix(boundary): dedup ratio calculation for multi-line titles
+  - Verification: Re-run confirmed T=L=E=8 (was 9), single file Mg_2026-01_027-036_Grenaderova.pdf (207K), 7 other files unchanged
+  - Export: /srv/pdf-extractor/exports/Mg/2026/Mg_2026-01/exports/2026_02_06__19_12_02/
+  - Regression validation: Compared 9 files (before) vs 8 files (after), only Grenaderova changed as expected
