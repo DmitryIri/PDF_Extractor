@@ -299,7 +299,7 @@ Policies are versioned and canonical. Changes require new version release (e.g.,
 
 ## Milestones & Accepted Decisions
 
-### Phase 2: Core Pipeline — ✅ COMPLETED (2026-02-04)
+### Phase 2: Core Pipeline — ✅ COMPLETED (2026-02-06)
 All 8 pipeline components implemented and tested:
 - ✅ InputValidator
 - ✅ PDFInspector
@@ -314,6 +314,19 @@ All 8 pipeline components implemented and tested:
 - Golden test: `mg_2025_12` (29 articles, 100% precision/recall)
 - All CORE tests: PASS
 - Universal Surname Selection Fix: PASS (Mh_2026-01, 9 articles)
+
+### Mg_2026-01 Production Validation — ✅ COMPLETED (2026-02-06)
+First production issue processing after golden test validation:
+- Issue: Mg_2026-01 (8 articles: 1 Contents + 1 Editorial + 6 Research)
+- Pipeline: Full E2E run via run-pipeline skill
+- Result: T=L=E=8, sha256 verified
+- Export: `/srv/pdf-extractor/exports/Mg/2026/Mg_2026-01/exports/2026_02_06__19_12_02/`
+
+**Grenaderova bugfix** (commit 55e0f08):
+- Issue: Multi-line RU title (4 candidates) vs EN title (2 candidates) caused false split
+- Fix: BoundaryDetector dedup ratio — sum all candidates per page (not just first)
+- Impact: Pages 27-36 now single file (was incorrectly split into 2)
+- Validation: Regression check confirmed only Grenaderova changed (7 other files unchanged)
 
 ### run-pipeline Skill — ✅ ACCEPTED (AC1-AC7, 2026-02-06)
 Full acceptance testing completed (pre-gate → execute → post-gate → audit):
