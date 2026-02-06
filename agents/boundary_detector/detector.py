@@ -239,9 +239,9 @@ def _apply_duplicate_filter(candidates: List[Dict[str, Any]], anchors: List[Dict
                 next_en = _is_latin_dominant(next_cand["text"])
 
                 if current_ru and next_en:
-                    # Check length similarity
-                    len_current = len(current["text"])
-                    len_next = len(next_cand["text"])
+                    # Check length similarity (sum all candidates on each page)
+                    len_current = sum(len(c["text"]) for c in sorted_cands if c["page"] == current_page)
+                    len_next = sum(len(c["text"]) for c in sorted_cands if c["page"] == next_page)
 
                     if len_current > 0 and len_next > 0:
                         ratio = len_next / len_current
