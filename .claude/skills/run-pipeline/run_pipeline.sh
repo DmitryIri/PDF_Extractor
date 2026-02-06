@@ -102,23 +102,53 @@ write_audit_json() {
   local e_val="$8"
   local sha_status="$9"
 
-  python3 - <<PY
+  # Pass variables via environment to avoid bash substitution in heredoc
+  AUDIT_PATH="$path" \
+  AUDIT_STATUS="$status" \
+  AUDIT_MESSAGE="$message" \
+  AUDIT_RUN_ID="$RUN_ID" \
+  AUDIT_RUN_DIR="$run_dir" \
+  AUDIT_EXPORT_PATH="$export_path" \
+  AUDIT_T_VAL="$t_val" \
+  AUDIT_L_VAL="$l_val" \
+  AUDIT_E_VAL="$e_val" \
+  AUDIT_SHA_STATUS="$sha_status" \
+  python3 - <<'PY'
 import json, os, time
+
+# Read from environment
+path = os.environ["AUDIT_PATH"]
+status = os.environ["AUDIT_STATUS"]
+message = os.environ["AUDIT_MESSAGE"]
+run_id = os.environ["AUDIT_RUN_ID"]
+run_dir = os.environ["AUDIT_RUN_DIR"]
+export_path = os.environ["AUDIT_EXPORT_PATH"]
+t_val = os.environ.get("AUDIT_T_VAL", "")
+l_val = os.environ.get("AUDIT_L_VAL", "")
+e_val = os.environ.get("AUDIT_E_VAL", "")
+sha_status = os.environ["AUDIT_SHA_STATUS"]
+
+# Convert to int or None
+t_articles = int(t_val) if t_val else None
+l_articles = int(l_val) if l_val else None
+e_articles = int(e_val) if e_val else None
+
 data = {
-  "ts_utc": "$(ts_utc)",
-  "status": "${status}",
-  "message": "${message}",
+  "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+  "status": status,
+  "message": message,
   "branch": os.popen("git branch --show-current").read().strip(),
-  "run_id": "${RUN_ID}",
-  "run_dir": "${run_dir}",
-  "export_path": "${export_path}",
-  "t_total_articles": ${t_val if t_val else "null"},
-  "l_articles_len": ${l_val if l_val else "null"},
-  "e_pdf_count": ${e_val if e_val else "null"},
-  "sha256sum_check": "${sha_status}",
+  "run_id": run_id,
+  "run_dir": run_dir,
+  "export_path": export_path,
+  "t_total_articles": t_articles,
+  "l_articles_len": l_articles,
+  "e_pdf_count": e_articles,
+  "sha256sum_check": sha_status,
 }
-os.makedirs(os.path.dirname("${path}"), exist_ok=True)
-with open("${path}", "w", encoding="utf-8") as f:
+
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, "w", encoding="utf-8") as f:
   json.dump(data, f, ensure_ascii=False, indent=2)
 PY
 }
