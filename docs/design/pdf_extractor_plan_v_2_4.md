@@ -8,7 +8,7 @@
 
 ## 1. Цель плана
 
-Зафиксировать **исполняемую, детерминированную последовательность разработки PDF Extractor**, синхронизированную с **TechSpec v_2_5**.
+Зафиксировать **исполняемую, детерминированную последовательность разработки PDF Extractor**, синхронизированную с **TechSpec v_2_6**.
 
 План:
 - самодостаточен;
@@ -20,7 +20,7 @@
 
 ## 2. Базовые принципы (NON‑NEGOTIABLE)
 
-1. **Plan следует TechSpec v_2_5.**
+1. **Plan следует TechSpec v_2_6.**
 2. **Один core‑компонент за раз.**
 3. **Facts only.**
 4. **Python — единственный вычислительный слой.**
@@ -77,7 +77,7 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 
 ## 5. Шаг 2. Реализация Python Core
 
-Компоненты реализуются **строго в порядке, определённом TechSpec v_2_5**.
+Компоненты реализуются **строго в порядке, определённом TechSpec v_2_6**.
 
 ### 5.1 Общие требования ко всем компонентам
 
@@ -144,8 +144,15 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 **Результат:**
 - `article_starts`;
 - confidence;
-- output: rich objects `article_starts` (bbox + typography/style metadata);
+- output: rich objects `article_starts` (start_page, confidence, signals, material_kind);
+- output: `boundary_ranges` (id, from, to, material_kind) — диапазоны для Splitter;
 - audit‑signals.
+
+**Material classification:**
+- contents — table of contents (front matter)
+- editorial — without extractable authors
+- research — with extractable authors
+- digest — journal-specific summary materials
 
 **Acceptance:**
 - confidence == 1.0 (binary match) для всех start_page;
@@ -170,7 +177,11 @@ touch /opt/projects/pdf-extractor/agents/input_validator/validator.py
 
 ### 5.7 Шаг 2.6 MetadataVerifier
 
-**Цель:** Проверить согласованность метаданных и PDF‑артефактов.
+**Цель:** Проверить согласованность метаданных и PDF‑артефактов; обогатить метаданные для OutputBuilder.
+
+**Функции:**
+- Validation: required fields, page ranges, file existence, naming rules
+- Enrichment: first_author_surname, expected_filename (по FilenameGeneration Policy v_1_1)
 
 **Acceptance:**
 - выявление несоответствий;
