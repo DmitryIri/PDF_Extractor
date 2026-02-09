@@ -18,6 +18,7 @@ PDF Extractor is a deterministic multi-agent pipeline for extracting individual 
 6. **T = L = E invariant** — article count in JSON = file names count = actual PDF files created
 7. **Code ≠ Runtime** — code in `/opt/projects/pdf-extractor/`, runtime artifacts in `/srv/pdf-extractor/`
 8. **Single Source of Truth (SoT)** — code and documentation in repo are SoT; runtime artifacts are NOT SoT
+9. **GitHub as Mirror** — GitHub (`git@github.com:DmitryIri/PDF_Extractor.git`) is a mirror remote of SoT on Server_Latvia; primary development and deployment occur on the server
 
 ## Pipeline Components (Sequential Execution)
 
