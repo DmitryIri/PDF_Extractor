@@ -18,7 +18,7 @@ PDF Extractor is a deterministic multi-agent pipeline for extracting individual 
 6. **T = L = E invariant** — article count in JSON = file names count = actual PDF files created
 7. **Code ≠ Runtime** — code in `/opt/projects/pdf-extractor/`, runtime artifacts in `/srv/pdf-extractor/`
 8. **Single Source of Truth (SoT)** — code and documentation in repo are SoT; runtime artifacts are NOT SoT
-9. **GitHub as Mirror** — GitHub (`git@github.com:DmitryIri/PDF_Extractor.git`) is a mirror remote of SoT on Server_Latvia; primary development and deployment occur on the server
+9. **GitHub as Mirror** — GitHub (`git@github.com:DmitryIri/PDF_Extractor.git`) is a mirror remote of SoT on Server_Latvia; primary development and deployment occur on the server; post-commit hook automatically pushes main branch to GitHub
 
 ## Pipeline Components (Sequential Execution)
 
@@ -160,6 +160,34 @@ tools/run_issue_pipeline.sh \
 2. `/archive-exports` → `_audit/claude_code/exports/${SESSION_ID}/`
 3. SHA256 manifest → `_audit/claude_code/reports/sha256_exports_${SESSION_ID}.txt`
 4. User confirms deletion of root files
+
+## Git & GitHub Workflow
+
+**Remote configuration:**
+- Origin: `git@github.com:DmitryIri/PDF_Extractor.git` (mirror)
+- SoT: `/opt/projects/pdf-extractor/` on Server_Latvia
+
+**Auto-push mechanism:**
+- Git post-commit hook (`.git/hooks/post-commit`) automatically pushes `main` branch to GitHub
+- Hook runs in background — does not block commits on network errors
+- Hook skips push if commit modifies `_audit/**` files (safety check)
+- Push logs: `/tmp/git-auto-push.log`
+
+**Check push status:**
+```bash
+tools/check_git_push_log.sh
+```
+
+**Manual push:**
+If auto-push fails or you need to push other branches:
+```bash
+git push origin <branch-name>
+```
+
+**Safety:**
+- `_audit/**` is gitignored and never pushed
+- Hook checks for audit files before push (defense in depth)
+- Network failures do not block local commits
 
 ## File Layout
 
