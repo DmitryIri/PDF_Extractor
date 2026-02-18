@@ -150,7 +150,7 @@ tools/run_issue_pipeline.sh \
 - `_audit/snapshot_*/` — repo snapshots (do not modify)
 
 **DR safety rules:**
-- NEVER git-add or commit anything under `_audit/**` (gitignored)
+> Общие safety rules (_audit, git push, секреты) — в глобальном ~/.claude/CLAUDE.md §5.
 - NEVER modify `_audit/snapshot_*` folders
 - All runtime artifacts in `/srv/pdf-extractor/` (NOT in `/opt/projects/`)
 - Export artifacts from Claude Code `/export` → archive via `/archive-exports` skill
