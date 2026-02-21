@@ -332,11 +332,11 @@ Policies are versioned and canonical. Changes require new version release (e.g.,
 All 8 pipeline components implemented and tested:
 - ✅ InputValidator
 - ✅ PDFInspector
-- ✅ MetadataExtractor (v_1_0.1)
-- ✅ BoundaryDetector (v_1_2)
+- ✅ MetadataExtractor (v_1_3_2)
+- ✅ BoundaryDetector (v_1_3_1)
 - ✅ Splitter
-- ✅ MetadataVerifier (v_1_3_0)
-- ✅ OutputBuilder (v_1_1_0)
+- ✅ MetadataVerifier (v_1_4_0)
+- ✅ OutputBuilder (v_1_2_0)
 - ✅ OutputValidator
 
 **Evidence:**
@@ -369,12 +369,21 @@ Full acceptance testing completed (pre-gate → execute → post-gate → audit)
 - Execution report: `_audit/claude_code/reports/execution_report_run_pipeline_ac1_ac7_2026_02_06.md`
 - Audit artifacts: `_audit/claude_code/reports/run_pipeline_ac*.json` (13 files)
 
+### Mh_2026-02 Production Validation — ✅ COMPLETED (2026-02-21)
+- Issue: Mh_2026-02 (9 articles: 1 Contents + 7 Research + 1 Info)
+- Pipeline: Full E2E run via run-pipeline skill
+- Result: T=L=E=9, sha256 verified
+- Export: `/srv/pdf-extractor/exports/Mh/2026/Mh_2026-02/exports/2026_02_21__19_04_46/`
+- **New material_kind `info`** introduced for editorial guidelines / journal announcements
+- Key fixes: contents_marker length filter, DOI-based suppression, `_is_info_section_page` with DOI check
+
 ### Accepted Policies
 - **Article Start Detection Policy v_1_0** — BoundaryDetector rules
-- **Filename Generation Policy v_1_1** — MetadataVerifier/OutputBuilder rules
+- **Filename Generation Policy v_1_2** — MetadataVerifier/OutputBuilder rules
   - GOST 7.79-2000 System B transliteration
   - STEP A→B→C surname extraction (incl. text_block fallback)
   - TOC re-verification, gene symbol validation
+  - `info` material_kind: `_Info.pdf` suffix (added 2026-02-21)
 
 ## Skills & Toolbelt
 
@@ -387,6 +396,9 @@ Full acceptance testing completed (pre-gate → execute → post-gate → audit)
   - Evidence: `_audit/claude_code/reports/execution_report_run_pipeline_ac1_ac7_2026_02_06.md`
 - **pdf-golden-tests** — canonical regression suite (CORE + optional E2E)
 - **techspec-plan-sync** — report TechSpec↔Plan inconsistencies
+- **doc-update** — version bump existing versioned doc (immutability-safe)
+- **doc-create** — create new versioned doc with mandatory sections
+- **doc-review** — read-only consistency checks (naming, versions, immutability)
 - **keybindings-help** — keybinding customization
 
 ### Archive-Exports Mechanism
