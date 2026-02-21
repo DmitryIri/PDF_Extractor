@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_6.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_7.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 
@@ -61,7 +61,7 @@ Each component:
 - Validates manifest from BoundaryDetector
 - Enriches with journal_code, issue_prefix, expected_filename
 - Extracts first_author_surname (STEP A→B→C algorithm)
-- Policy: `docs/policies/filename_generation_policy_v_1_1.md`
+- Policy: `docs/policies/filename_generation_policy_v_1_2.md`
 - TOC re-verification: checks contents_marker in article's own page range
 
 ### OutputBuilder (`agents/output_builder/builder.py`)
@@ -319,12 +319,13 @@ Policies are versioned and canonical. Changes require new version release (e.g.,
   - Applied by: BoundaryDetector
   - DOI alone is NEVER sufficient; requires all 5 RU blocks
 
-- **Filename Generation Policy v_1_1** — `docs/policies/filename_generation_policy_v_1_1.md`
+- **Filename Generation Policy v_1_2** — `docs/policies/filename_generation_policy_v_1_2.md`
   - Applied by: MetadataVerifier, OutputBuilder
   - GOST 7.79-2000 System B transliteration (rules 1-3)
   - STEP A→B→C surname extraction (incl. text_block fallback)
   - TOC re-verification, gene symbol validation
-  - Supersedes: v_1_0 (2026-02-04)
+  - `info` material_kind: `_Info.pdf` suffix (added 2026-02-21)
+  - Supersedes: v_1_1 (2026-02-04)
 
 ## Milestones & Accepted Decisions
 
