@@ -14,10 +14,9 @@ import sys
 from typing import Any, Dict, List, Optional
 
 import policy_v_1_0
-from shared.author_surname_normalizer import is_running_header
 
 COMPONENT = "BoundaryDetector"
-VERSION = "1.3.0"  # Fix en_authors running-header, DOI-based suppression, info material_kind
+VERSION = "1.3.1"  # Fix _is_info_section_page: require no DOI on page (distinguish info vs research)
 
 EXIT_SUCCESS = 0
 EXIT_INVALID_INPUT = 10
@@ -342,12 +341,9 @@ def _has_extractable_authors(page: int, anchors: List[Dict[str, Any]], window: i
         if anchor_type in ("ru_authors", "en_authors"):
             anchor_page = anchor.get("page")
             if anchor_page and page <= anchor_page <= page + window:
-                text = anchor.get("text", "")
-                # Filter running headers (e.g. "Vol. 21, No. 2") from both ru/en authors
-                if is_running_header(text):
-                    continue
-                # Filter out editorial greetings (ru_authors only)
+                # Filter out editorial greetings
                 if anchor_type == "ru_authors":
+                    text = anchor.get("text", "")
                     if _is_editorial_greeting(text):
                         continue  # Skip this anchor, it's not real authors
 
@@ -407,17 +403,26 @@ def _is_mid_article_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
 
 
 def _is_info_section_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
-    """True if page has a standalone ИНФОРМАЦИЯ/INFORMATION text_block.
+    """True if page has a standalone ИНФОРМАЦИЯ/INFORMATION text_block AND no article DOI.
 
-    Info sections (editorial/author guidelines) use a single-word section label
-    as their heading. Distinguishes from research articles and contents.
+    The DOI check distinguishes:
+    - True info sections (author guidelines, news): ИНФОРМАЦИЯ heading, no article DOI.
+    - Research informational notes: ИНФОРМАЦИЯ heading (journal rubric) AND a proper DOI.
+    Example: page 61 has "ИНФОРМАЦИЯ" rubric + DOI → research article, NOT info section.
+             page 68 has "ИНФОРМАЦИЯ" label + no DOI → genuine info/guidelines section.
     """
+    has_info_block = False
+    has_doi = False
     for anchor in anchors:
-        if anchor.get("type") == "text_block" and anchor.get("page") == page:
+        if anchor.get("page") != page:
+            continue
+        if anchor.get("type") == "text_block":
             t = anchor.get("text", "").strip().upper()
             if t in ("ИНФОРМАЦИЯ", "INFORMATION"):
-                return True
-    return False
+                has_info_block = True
+        elif anchor.get("type") == "doi":
+            has_doi = True
+    return has_info_block and not has_doi
 
 
 def _detect_contents_on_first_pages(anchors: List[Dict[str, Any]], max_page: int = 4) -> Optional[Dict[str, Any]]:
