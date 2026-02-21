@@ -24,7 +24,7 @@ import fitz  # PyMuPDF
 
 
 COMPONENT = "MetadataExtractor"
-VERSION = "1.3.1"  # Fixed ru_title/en_title leaking into ru_authors/en_authors
+VERSION = "1.3.2"  # Fix contents_marker: skip text_blocks > 30 chars (sentence vs TOC header)
 
 # Canonical DOI regex (case-insensitive)
 DOI_REGEX = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b", re.IGNORECASE)
@@ -601,6 +601,10 @@ def _extract_contents_marker(text_blocks: List[Dict[str, Any]]) -> List[Dict[str
         if a.get("type") != "text_block":
             continue
         text = a.get("text", "")
+        # Skip long texts: "содержание" embedded in a sentence (> 30 chars) is article body,
+        # not a TOC section header. Real TOC headers are short standalone words.
+        if len(text.strip()) > 30:
+            continue
         if CONTENTS_MARKER_RE.search(text):
             out.append(
                 {

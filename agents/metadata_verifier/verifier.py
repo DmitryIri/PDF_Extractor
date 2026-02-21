@@ -31,7 +31,7 @@ from shared.author_surname_normalizer import (
 )
 
 COMPONENT = "MetadataVerifier"
-VERSION = "1.3.0"  # Filename generation policy v_1_1 (GOST rule 3 + text_block fallback)
+VERSION = "1.4.0"  # Add info material_kind support
 
 
 def _error_exit(exit_code: int, code: str, message: str, details: Optional[Dict[str, Any]] = None) -> None:
@@ -459,7 +459,7 @@ def _verify_and_enrich_boundary_range(
     if from_page > to_page:
         _error_exit(30, "verification_failed", f"Article {article_id}: from_page must be <= to_page")
 
-    if material_kind not in ("contents", "editorial", "research", "digest"):
+    if material_kind not in ("contents", "editorial", "research", "digest", "info"):
         _error_exit(10, "invalid_input", f"Article {article_id}: invalid material_kind '{material_kind}'")
 
     # Format page numbers as 3-digit zero-padded
@@ -515,6 +515,9 @@ def _verify_and_enrich_boundary_range(
 
     elif effective_kind == "digest":
         expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Digest.pdf"
+
+    elif effective_kind == "info":
+        expected_filename = f"{issue_prefix}_{from_page_formatted}-{to_page_formatted}_Info.pdf"
 
     else:
         _error_exit(50, "internal_error", f"Unhandled material_kind: {effective_kind}")

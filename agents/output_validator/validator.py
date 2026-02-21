@@ -188,7 +188,7 @@ def _validate_filename_policy(article: Dict[str, Any]):
     research_pattern = r'^[A-Za-z]+_\d{4}-\d{2}_\d{3}-\d{3}_[A-Z][a-z]+\.pdf$'
 
     # Service pattern: Mg_2025-12_001-004_Contents.pdf
-    service_pattern = r'^[A-Za-z]+_\d{4}-\d{2}_\d{3}-\d{3}_(Contents|Editorial|Digest)\.pdf$'
+    service_pattern = r'^[A-Za-z]+_\d{4}-\d{2}_\d{3}-\d{3}_(Contents|Editorial|Digest|Info)\.pdf$'
 
     if material_kind == "research":
         if not re.match(research_pattern, filename):
@@ -203,7 +203,7 @@ def _validate_filename_policy(article: Dict[str, Any]):
                 }
             )
 
-    elif material_kind in ["contents", "editorial", "digest"]:
+    elif material_kind in ["contents", "editorial", "digest", "info"]:
         if not re.match(service_pattern, filename):
             _error_exit(
                 EXIT_VERIFICATION_FAILED,

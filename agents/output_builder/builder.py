@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 COMPONENT = "OutputBuilder"
-VERSION = "1.1.0"  # Material-aware validation
+VERSION = "1.2.0"  # Add info material_kind support
 
 # Export root directory (canonical per project design)
 EXPORT_ROOT = Path("/srv/pdf-extractor/exports")
@@ -99,7 +99,7 @@ def _validate_material_kind_filename(article: Dict[str, Any]) -> None:
                     f"Article {article_id}: missing material_kind field")
 
     # Service suffix patterns
-    service_suffixes = ["_Contents.pdf", "_Editorial.pdf", "_Digest.pdf"]
+    service_suffixes = ["_Contents.pdf", "_Editorial.pdf", "_Digest.pdf", "_Info.pdf"]
 
     if material_kind == "contents":
         if not expected_filename.endswith("_Contents.pdf"):
@@ -115,6 +115,11 @@ def _validate_material_kind_filename(article: Dict[str, Any]) -> None:
         if not expected_filename.endswith("_Digest.pdf"):
             _error_exit(40, "build_failed",
                         f"Article {article_id}: material_kind=digest but filename doesn't end with _Digest.pdf: {expected_filename}")
+
+    elif material_kind == "info":
+        if not expected_filename.endswith("_Info.pdf"):
+            _error_exit(40, "build_failed",
+                        f"Article {article_id}: material_kind=info but filename doesn't end with _Info.pdf: {expected_filename}")
 
     elif material_kind == "research":
         # Research articles must NOT use service suffixes

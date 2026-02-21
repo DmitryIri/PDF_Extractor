@@ -14,9 +14,10 @@ import sys
 from typing import Any, Dict, List, Optional
 
 import policy_v_1_0
+from shared.author_surname_normalizer import is_running_header
 
 COMPONENT = "BoundaryDetector"
-VERSION = "1.2.0"  # Fixed Contents/Editorial detection for front matter
+VERSION = "1.3.0"  # Fix en_authors running-header, DOI-based suppression, info material_kind
 
 EXIT_SUCCESS = 0
 EXIT_INVALID_INPUT = 10
@@ -341,9 +342,12 @@ def _has_extractable_authors(page: int, anchors: List[Dict[str, Any]], window: i
         if anchor_type in ("ru_authors", "en_authors"):
             anchor_page = anchor.get("page")
             if anchor_page and page <= anchor_page <= page + window:
-                # Filter out editorial greetings
+                text = anchor.get("text", "")
+                # Filter running headers (e.g. "Vol. 21, No. 2") from both ru/en authors
+                if is_running_header(text):
+                    continue
+                # Filter out editorial greetings (ru_authors only)
                 if anchor_type == "ru_authors":
-                    text = anchor.get("text", "")
                     if _is_editorial_greeting(text):
                         continue  # Skip this anchor, it's not real authors
 
@@ -357,6 +361,7 @@ def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
     Returns: "contents" | "editorial" | "research"
 
     Rules:
+    - info: page has standalone ИНФОРМАЦИЯ/INFORMATION text_block
     - contents: page has contents_marker anchor (or nearby within window of 2)
     - editorial: article start WITHOUT extractable authors on same page (window=0)
     - research: article start WITH extractable authors in window (page..page+1)
@@ -366,6 +371,10 @@ def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
     - This prevents misclassifying Editorial when next page has research article authors
     - Example: page 5 (Editorial) followed by page 6 (Research with authors)
     """
+    # Check for info section (standalone ИНФОРМАЦИЯ/INFORMATION heading)
+    if _is_info_section_page(page, anchors):
+        return "info"
+
     # Check for Contents marker
     if _has_contents_marker(page, anchors, window=2):
         return "contents"
@@ -377,6 +386,38 @@ def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
         return "research"
     else:
         return "editorial"
+
+
+def _is_mid_article_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
+    """True if a DOI on page P indicates the article started BEFORE P.
+
+    Pattern: DOI ending in ".{start_page}-{end_page}" where start_page < page.
+    Example: DOI "10.25557/2074-014x.2026.02.68-78" on page 69 → start_page=68 < 69 → True.
+    This suppresses false article_starts caused by DOI running-headers or instructions pages.
+    """
+    for anchor in anchors:
+        if anchor.get("type") == "doi" and anchor.get("page") == page:
+            doi_val = anchor.get("value", "")
+            m = re.search(r'\.(\d+)-\d+$', doi_val)
+            if m:
+                doi_start = int(m.group(1))
+                if doi_start < page:
+                    return True
+    return False
+
+
+def _is_info_section_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
+    """True if page has a standalone ИНФОРМАЦИЯ/INFORMATION text_block.
+
+    Info sections (editorial/author guidelines) use a single-word section label
+    as their heading. Distinguishes from research articles and contents.
+    """
+    for anchor in anchors:
+        if anchor.get("type") == "text_block" and anchor.get("page") == page:
+            t = anchor.get("text", "").strip().upper()
+            if t in ("ИНФОРМАЦИЯ", "INFORMATION"):
+                return True
+    return False
 
 
 def _detect_contents_on_first_pages(anchors: List[Dict[str, Any]], max_page: int = 4) -> Optional[Dict[str, Any]]:
@@ -431,6 +472,10 @@ def _detect_article_starts(anchors: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
     # Step 3: Apply RU/EN duplicate filter
     candidates = _apply_duplicate_filter(candidates, anchors)
+
+    # Step 3.5: DOI-based suppression — drop candidates where DOI on page P
+    # indicates article start is BEFORE P (e.g. instructions page with a prior article's DOI)
+    candidates = [c for c in candidates if not _is_mid_article_page(c["page"], anchors)]
 
     # Step 4: Build article_starts with rich metadata including material_kind
     pages = sorted(set(cand["page"] for cand in candidates))
