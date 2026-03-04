@@ -2,7 +2,7 @@
 
 **Проект:** PDF Extractor  
 **Статус:** Canonical  
-**Версия:** v_1_10  
+**Версия:** v_1_11  
 **Назначение:** Единая точка навигации по Project Files (Source of Truth)
 
 ---
@@ -81,11 +81,12 @@ Project Files являются **единственным Source of Truth**.
 - не обязаны совпадать с текущим состоянием.
 
 **Канонические файлы (текущие версии):**
-- `pdf_extractor_techspec_v_2_7.md` ← canonical
+- `pdf_extractor_techspec_v_2_8.md` ← canonical
 - `pdf_extractor_plan_v_2_5.md` ← canonical
 - `pdf_extractor_boundary_detector_v_1_3.md` ← canonical
 
 **Superseded (не архивированы, immutable):**
+- `pdf_extractor_techspec_v_2_7.md` ← superseded by v_2_8 (в `docs/design/`)
 - `pdf_extractor_techspec_v_2_6.md` ← superseded by v_2_7 (в `docs/design/`)
 - `pdf_extractor_plan_v_2_4.md` ← superseded by v_2_5 (в `docs/design/`)
 - `pdf_extractor_boundary_detector_v_1_2.md` ← superseded by v_1_3 (в `docs/design/`)
@@ -172,7 +173,7 @@ Project Files являются **единственным Source of Truth**.
   - `session_closure_log_YYYY_MM_DD_v_X_Y.md`
 
 - `docs/design/`
-  - `pdf_extractor_techspec_v_2_7.md` (canonical)
+  - `pdf_extractor_techspec_v_2_8.md` (canonical)
   - `pdf_extractor_plan_v_2_5.md` (canonical)
   - `pdf_extractor_boundary_detector_v_1_3.md` (canonical)
 
@@ -244,6 +245,7 @@ Claude Code **обязан** прочитать и интерпретирова�
 
 ## 7. CHANGELOG
 
+- **v_1_11 — 2026-03-04** — RFC-4: TechSpec v_2_7 → v_2_8 (canonical); добавлен §6.4 inbox/ как canonical input path с политикой хранения/очистки.
 - **v_1_10 — 2026-03-04** — Doc sync сессии 2026-03-04: project_summary v_2_12→v_2_13 (canonical), v_2_11 archived; plan v_2_4→v_2_5 (canonical, добавлен info material_kind); session-init-pdf_extractor skill добавлен в .claude/skills/. Физические пути обновлены.
 - **v_1_9 — 2026-02-21** — Doc-agent инфраструктура: добавлены .claude/agents/doc-agent.md, .claude/rules/single_writer_contract_v_1_0.md, .claude/skills/doc-*/SKILL.md. Design docs bump: techspec v_2_7, boundary_detector v_1_3. Policy bump: filename_generation_policy v_1_2 (info material_kind). State update: project_summary → v_2_12, session_closure_log_2026_02_21 добавлен.
 - **v_1_8 — 2026-02-04** — Docs canonicalization: все семейства приведены к единому entry point. Архивированы superseded design docs (techspec v_2_5, boundary_detector v_1_1), old summaries (v_2_6–v_2_10), working artifact REPORT. Удалён pre-sync duplicate session_closure_log. Added explicit canonical pointers + archive notes in §2, §5. Зарегистрирован task_specs/ в §5.

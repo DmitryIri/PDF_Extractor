@@ -129,11 +129,13 @@ Pipeline выполняется строго последовательно:
 ## 5. Канонические документы проекта
 
 ### TechSpec
-- PDF Extractor — TechSpec v_2_7 (Canonical) — committed
+- PDF Extractor — TechSpec v_2_8 (Canonical) — committed
   - Stdin envelope + stdout/stderr contract
   - Typography-based detection specification
   - Rich article_starts schema
   - OutputValidator specification (§7.8)
+  - §6.4: inbox/ — canonical input path с политикой хранения/очистки (RFC-4)
+- PDF Extractor — TechSpec v_2_7 (superseded by v_2_8) — immutable
 
 ### Plan
 - PDF Extractor — Plan v_2_5 (Canonical) — supersedes v_2_4; добавлен info material_kind, refs → TechSpec v_2_7
@@ -281,6 +283,9 @@ Timestamp-based export_id (D7). Повторные прогоны создают
 ---
 
 ## 11. CHANGELOG
+
+### v_2_13 (updated) — 2026-03-04
+- **RFC-4:** TechSpec v_2_7 → v_2_8 (canonical): §6.4 inbox/ как canonical input path (naming, scp delivery, retention policy, data flow); project_files_index v_1_10 → v_1_11
 
 ### v_2_13 — 2026-03-04
 - **Component versions updated (facts):**
