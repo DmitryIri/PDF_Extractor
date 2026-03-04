@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PDF Extractor is a deterministic multi-agent pipeline for extracting individual articles from PDF issues of scientific journals. The project follows a production-first approach with DR architecture.
 
-**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_7.md` (canonical, self-contained)
+**Primary documentation:** `docs/design/pdf_extractor_techspec_v_2_8.md` (canonical, self-contained)
 
 ## Architecture Invariants (Non-Negotiable)
 
@@ -115,7 +115,7 @@ Use the canonical entrypoint:
 tools/run_issue_pipeline.sh \
   --journal-code Mg \
   --issue-id mg_2025_12 \
-  --pdf-path /srv/pdf-extractor/tmp/Mg_2025-12.pdf \
+  --pdf-path /srv/pdf-extractor/inbox/Mg_2025-12.pdf \
   --run-id manual_20260206_120000
 ```
 
