@@ -378,6 +378,13 @@ Full acceptance testing completed (pre-gate → execute → post-gate → audit)
 - **New material_kind `info`** introduced for editorial guidelines / journal announcements
 - Key fixes: contents_marker length filter, DOI-based suppression, `_is_info_section_page` with DOI check
 
+### Na_2026-02 Production Validation — ✅ COMPLETED (2026-03-04)
+- Issue: Na_2026-02 (6 articles: 1 Contents + 4 Research + 1 Editorial) — журнал «Наркология»
+- Pipeline: Full E2E run via tools/run_issue_pipeline.sh
+- Result: T=L=E=6, sha256 verified
+- Export: `/srv/pdf-extractor/exports/Na/2026/Na_2026-02/exports/2026_03_04__14_39_05/`
+- First issue of journal Na processed; no code changes required
+
 ### Accepted Policies
 - **Article Start Detection Policy v_1_0** — BoundaryDetector rules
 - **Filename Generation Policy v_1_2** — MetadataVerifier/OutputBuilder rules
@@ -400,6 +407,7 @@ Full acceptance testing completed (pre-gate → execute → post-gate → audit)
 - **doc-update** — version bump existing versioned doc (immutability-safe)
 - **doc-create** — create new versioned doc with mandatory sections
 - **doc-review** — read-only consistency checks (naming, versions, immutability)
+- **session-init-pdf_extractor** — project-specific session kickoff (no /srv/* paths; allowed dirs only)
 - **keybindings-help** — keybinding customization
 
 ### Archive-Exports Mechanism
