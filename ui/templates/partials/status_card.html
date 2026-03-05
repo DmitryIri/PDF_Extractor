@@ -1,0 +1,134 @@
+{#
+  Partial template: status card for a single run.
+  Used by:
+    - run.html (initial render via {% include %})
+    - GET /api/runs/{run_id}/status (HTMX polling response)
+
+  Variables: run (dict), request
+#}
+
+{% set active = run.status in ('pending', 'running') %}
+
+<div id="status-card"
+     {% if active %}
+     hx-get="/api/runs/{{ run.run_id }}/status"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}
+     class="rounded-xl border p-6
+       {% if run.status == 'done' %}
+         border-emerald-200 bg-emerald-50
+       {% elif run.status == 'failed' %}
+         border-red-200 bg-red-50
+       {% else %}
+         border-stone-200 bg-white
+       {% endif %}">
+
+  {# ── PENDING ─────────────────────────────────────────────────────── #}
+  {% if run.status == 'pending' %}
+
+    <div class="flex items-center gap-3">
+      <span class="inline-flex h-3 w-3 rounded-full bg-amber-400 animate-pulse"></span>
+      <span class="font-medium text-stone-700">В очереди…</span>
+    </div>
+    <p class="mt-2 text-sm text-stone-500">
+      Pipeline ещё не запущен. Страница обновляется автоматически.
+    </p>
+
+  {# ── RUNNING ─────────────────────────────────────────────────────── #}
+  {% elif run.status == 'running' %}
+
+    <div class="flex items-center gap-3 mb-3">
+      <span class="inline-flex h-3 w-3 rounded-full bg-blue-500 animate-pulse"></span>
+      <span class="font-medium text-stone-700">Обработка…</span>
+    </div>
+    <p class="text-sm text-stone-500">
+      Pipeline запущен. Обычно занимает 1–5 минут в зависимости от объёма журнала.
+      Страница обновляется каждые 2 секунды.
+    </p>
+    {% if run.pid %}
+    <p class="mt-2 text-xs text-stone-400 mono">pid: {{ run.pid }}</p>
+    {% endif %}
+
+  {# ── DONE ────────────────────────────────────────────────────────── #}
+  {% elif run.status == 'done' %}
+
+    <div class="flex items-center gap-2 mb-4">
+      <svg class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="font-semibold text-emerald-800">
+        Готово — {{ run.total_articles }} статей
+      </span>
+    </div>
+
+    <a href="/api/runs/{{ run.run_id }}/download"
+       class="inline-flex items-center gap-2 px-5 py-2.5
+              bg-emerald-700 text-white text-sm font-medium rounded-lg
+              hover:bg-emerald-800 active:bg-emerald-900
+              transition-colors duration-150">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+      </svg>
+      Скачать ZIP
+    </a>
+
+    {% if run.zip_path %}
+    <p class="mt-3 text-xs text-stone-400 mono">{{ run.zip_path | basename }}</p>
+    {% endif %}
+
+    <!-- Verification hint -->
+    <div class="mt-4 p-3 rounded-lg bg-emerald-100/60 border border-emerald-200/60 text-xs text-emerald-700">
+      <p class="font-medium mb-1">Проверка целостности после скачивания:</p>
+      <p class="mono">cd &lt;папка с распакованным ZIP&gt;</p>
+      <p class="mono">sha256sum -c checksums.sha256</p>
+      <p class="mt-1 text-emerald-600">Все файлы должны показать: <span class="mono font-medium">OK</span></p>
+    </div>
+
+  {# ── FAILED ──────────────────────────────────────────────────────── #}
+  {% elif run.status == 'failed' %}
+
+    <div class="flex items-center gap-2 mb-3">
+      <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
+      <span class="font-semibold text-red-700">Ошибка</span>
+      {% if run.exit_code is not none %}
+      <span class="mono text-xs text-red-400">(exit {{ run.exit_code }})</span>
+      {% endif %}
+    </div>
+
+    {% if run.error_msg %}
+    <p class="text-sm text-red-700 mb-3">{{ run.error_msg }}</p>
+    {% endif %}
+
+    <p class="text-xs text-stone-500">
+      Подробности в логе:
+      <span class="mono text-stone-600">{{ run.log_path }}</span>
+    </p>
+
+    <div class="mt-4">
+      <a href="/" class="text-sm text-stone-600 hover:text-stone-900 underline underline-offset-2">
+        ← Попробовать снова
+      </a>
+    </div>
+
+  {% endif %}
+
+  <!-- Timestamps -->
+  <div class="mt-5 pt-4 border-t
+              {% if run.status == 'done' %}border-emerald-200{% elif run.status == 'failed' %}border-red-200{% else %}border-stone-100{% endif %}
+              flex flex-wrap gap-x-5 gap-y-1 text-xs text-stone-400">
+    <span>Создан: <span class="mono">{{ run.created_at[:19] | replace("T", " ") }} UTC</span></span>
+    {% if run.finished_at %}
+    <span>Завершён: <span class="mono">{{ run.finished_at[:19] | replace("T", " ") }} UTC</span></span>
+    {% endif %}
+  </div>
+
+</div>

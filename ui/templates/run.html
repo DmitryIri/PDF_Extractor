@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ run.journal_code }} {{ run.issue_id }} — PDF Extractor{% endblock %}
+
+{% block content %}
+
+<!-- Back link -->
+<div class="mb-6">
+  <a href="/" class="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors">
+    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+    </svg>
+    Новый выпуск
+  </a>
+</div>
+
+<!-- Run header -->
+<div class="mb-6">
+  <h1 class="text-xl font-semibold">
+    {{ run.journal_code }}
+    <span class="text-stone-400">·</span>
+    {{ run.issue_id }}
+  </h1>
+  <p class="mono text-xs text-stone-400 mt-1">{{ run.run_id }}</p>
+</div>
+
+<!-- Busy error (redirected from /upload) -->
+{% if error %}
+<div class="mb-5 flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+  <svg class="h-4 w-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24"
+       stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+  </svg>
+  <span>{{ error }}</span>
+</div>
+{% endif %}
+
+<!-- Status card (HTMX polling target) -->
+{% include "partials/status_card.html" %}
+
+<!-- History link -->
+<div class="mt-8">
+  <a href="/history"
+     class="text-sm text-stone-400 hover:text-stone-700 transition-colors">
+    История всех запусков →
+  </a>
+</div>
+
+{% endblock %}
