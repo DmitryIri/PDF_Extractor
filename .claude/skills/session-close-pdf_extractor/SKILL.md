@@ -1,13 +1,13 @@
 ---
-name: session-close
-description: Single canonical end-of-session workflow: automatically archive /export artifacts, draft session_closure_log, and enforce _audit gitignore discipline.
+name: session-close-pdf_extractor
+description: Session closure workflow for pdf-extractor project. Archive /export artifacts, draft session_closure_log, enforce _audit gitignore discipline.
 ---
 
-# session-close
+# session-close-pdf_extractor
 
 ## Purpose
-Single entrypoint for "Завершение сессии".
-This skill performs the full canonical closure workflow:
+Single entrypoint for "Завершение сессии" for pdf-extractor.
+Full canonical closure workflow:
 1) Detect and archive Claude Code /export artifacts from repo root (via /archive-exports; deletion requires user confirmation).
 2) Draft `session_closure_log_YYYY_MM_DD_v_X_Y.md` (content + suggested path) using repo facts only.
 3) Provide final verification commands and enforce `_audit/**` non-tracking.
@@ -64,10 +64,17 @@ Ask user to run:
 Claude Code MUST execute before any other Step B work:
 
 ```bash
-TODAY=$(date -u +%Y_%m_%d)
-ls docs/state/session_closure_log_${TODAY}_v_*.md 2>/dev/null || true
+# Step 1: get today's date (separate Bash call — no $() substitution)
+date -u +%Y_%m_%d
+```
+
+```bash
+# Step 2: check for existing closure log (use literal date from step 1)
+ls docs/state/session_closure_log_<YYYY_MM_DD>_v_*.md 2>/dev/null || true
 git status -sb
 ```
+
+**Note:** Execute `date` as a SEPARATE Bash call first, then use the literal result in the `ls` command. NEVER use `$(date ...)` inline.
 
 **Decision rule:**
 - If at least one `session_closure_log_<today>_v_*.md` exists, AND
@@ -122,7 +129,7 @@ Generate a markdown draft with mandatory sections:
 10. CHANGELOG
 
 Rules:
-- Each bullet must be verifiable (command → result → fact).
+- Each bullet must be verifiable (command -> result -> fact).
 - If a section has no evidence, state "Нет данных" (do not invent).
 - Output must include: suggested file path + full markdown body (ready to save).
 
@@ -135,6 +142,19 @@ Claude Code MUST execute:
 Remind:
 - NEVER git-add or commit anything under _audit/**
 - _audit/** must remain gitignored
+
+### Step D — MEMORY.md update (automated)
+
+Read tool:
+- Auto memory: `/home/dmitry/.claude/projects/-opt-projects-pdf-extractor/memory/MEMORY.md`
+
+Update:
+- "Current Status": mark completed items, set pending correctly
+- "Next Steps": reflect what was done, what comes next
+- Add new patterns/lessons from this session (if any)
+- Remove outdated entries
+
+Keep under 200 lines. Facts only.
 
 ## Output rules
 - Facts only; no assumptions about executed commands.
