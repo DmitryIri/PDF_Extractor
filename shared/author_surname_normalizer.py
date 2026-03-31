@@ -11,6 +11,7 @@ Stopword contract:
 """
 
 import re as _re
+from typing import Optional as _Optional
 
 # ---------------------------------------------------------------------------
 # Running-header detection
@@ -166,3 +167,56 @@ def looks_like_single_initial_byline(text: str) -> bool:
     if first_word_cap in STOPWORDS_HARD or first_word_cap in STOPWORDS_SOFT:
         return False
     return True
+
+
+# Prefix-only variant of _SINGLE_INITIAL_BYLINE_RE: matches 'Surname I.' at the
+# START of a longer string (e.g. after merge with body text during grouping).
+# The trailing \s ensures the initial period ends the byline token, not mid-word.
+_SINGLE_INITIAL_BYLINE_START_RE = _re.compile(
+    r'^([A-Za-zА-Яа-яЁё]+'   # Surname (one word)
+    r'[\s,]+'                  # separator
+    r'[A-Za-zА-ЯЁёа-яё]\.)'  # ONE initial + period
+    r'\s',                     # must be followed by whitespace (not end-of-string)
+    _re.UNICODE
+)
+
+
+def looks_like_single_initial_byline_at_start(text: str) -> bool:
+    """Return True if *text* STARTS WITH a single-initial author byline.
+
+    Used when a byline was merged with following body text during grouping
+    (e.g. 'Гелприн М. Рассказ Майка...' → prefix 'Гелприн М.' is a byline).
+    Applies the same structural-label and stopword guards as
+    looks_like_single_initial_byline().
+    """
+    if not text:
+        return False
+    t = text.strip()
+    m = _SINGLE_INITIAL_BYLINE_START_RE.match(t)
+    if not m:
+        return False
+    # Validate the extracted prefix through the full single-initial check
+    return looks_like_single_initial_byline(m.group(1))
+
+
+def extract_single_initial_byline_prefix(text: str) -> _Optional[str]:
+    """Extract the single-initial byline prefix from text that starts with one.
+
+    Returns the prefix (e.g. 'Гелприн М.') when the text is a merged block
+    where a byline was joined with following body text during grouping.
+    Returns None if the text does not start with a valid single-initial byline.
+
+    Used by MetadataExtractor to emit only the byline portion as ru_authors
+    anchor text — avoids emitting the full merged body block (which would
+    trigger _is_editorial_greeting's > 200 char check in BoundaryDetector).
+    """
+    if not text:
+        return None
+    t = text.strip()
+    m = _SINGLE_INITIAL_BYLINE_START_RE.match(t)
+    if not m:
+        return None
+    prefix = m.group(1)
+    if looks_like_single_initial_byline(prefix):
+        return prefix
+    return None

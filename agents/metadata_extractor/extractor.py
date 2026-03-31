@@ -32,6 +32,8 @@ from shared.author_surname_normalizer import (
     is_running_header as _is_running_header,
     looks_like_author_byline as _looks_like_author_byline,
     looks_like_single_initial_byline as _looks_like_single_initial_byline,
+    looks_like_single_initial_byline_at_start as _looks_like_single_initial_byline_at_start,
+    extract_single_initial_byline_prefix as _extract_single_initial_byline_prefix,
 )
 
 COMPONENT = "MetadataExtractor"
@@ -342,6 +344,12 @@ def _pick_ru_authors(page_candidates: List[Dict[str, Any]], ru_title: Dict[str, 
             continue
         if _looks_like_author_byline(t) or _looks_like_single_initial_byline(t):
             return c
+        # Merged block: byline was joined with body text during grouping.
+        # Extract only the byline prefix to avoid emitting a > 200 char ru_authors
+        # anchor (which triggers _is_editorial_greeting in BoundaryDetector).
+        prefix = _extract_single_initial_byline_prefix(t)
+        if prefix is not None:
+            return {**c, "text": prefix}
     return None
 
 
@@ -533,7 +541,10 @@ def _pick_en_authors(
     """EN authors detection: first en-candidate after title matching author byline pattern.
 
     Negative gate: running headers excluded via shared is_running_header.
-    Positive gate: shared byline detection (2-initial or single-initial).
+    Positive gate: 2-initial (looks_like_author_byline) or single-initial (looks_like_single_initial_byline).
+    NOTE: _at_start variant intentionally NOT used here — Western-format "FirstName I. Surname"
+      strings (e.g. correspondence sections) produce false positives in the EN path.
+      Single-initial foreign authors (e.g. Gelprin M.) are handled via the RU path.
     Vertical constraint: when page_height provided, candidate y_mid must be in top
       TOP_REGION_FRAC of the page — prevents bibliography entries at the bottom of the
       page from being accepted as en_authors (regression Mg_2025-12 p111 Davidson).

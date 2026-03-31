@@ -21,6 +21,8 @@ from shared.author_surname_normalizer import (  # noqa: E402
     is_toc_by_anchors,
     looks_like_author_byline,
     looks_like_single_initial_byline,
+    looks_like_single_initial_byline_at_start,
+    extract_single_initial_byline_prefix,
 )
 from verifier import (  # noqa: E402
     _transliterate_ru_to_en,
@@ -333,3 +335,74 @@ class TestLooksLikeSingleInitialByline:
     ])
     def test_rejects_non_bylines(self, text):
         assert looks_like_single_initial_byline(text) is False
+
+
+# ---------------------------------------------------------------------------
+# TestLooksLikeSingleInitialBylineAtStart
+# ---------------------------------------------------------------------------
+
+class TestLooksLikeSingleInitialBylineAtStart:
+    """Prefix-only variant: byline merged with following body text."""
+
+    # -- accept: byline at start of merged text --
+    @pytest.mark.parametrize("text", [
+        "Гелприн М. Рассказ Майка Гелприна «Свеча горела» разворачивается",
+        "Gelprin M. Mike Gelprin's short story is set in a future",
+        "Иванов А. Аннотация: исследование показало что",
+        "Smith J. The study examined outcomes in patients",
+    ])
+    def test_accepts_byline_at_start(self, text):
+        assert looks_like_single_initial_byline_at_start(text) is True
+
+    # -- reject: full-string single-initial (handled by looks_like_single_initial_byline) --
+    @pytest.mark.parametrize("text", [
+        "Гелприн М.",      # full string — use looks_like_single_initial_byline instead
+        "Gelprin M.",
+    ])
+    def test_rejects_full_string_bylines(self, text):
+        # Requires trailing whitespace after period to match; full strings have no trailing space
+        assert looks_like_single_initial_byline_at_start(text) is False
+
+    # -- reject: structural labels at start --
+    @pytest.mark.parametrize("text", [
+        "Таблица А. Данные исследования показали",
+        "Figure B. Comparison of results",
+    ])
+    def test_rejects_structural_labels_at_start(self, text):
+        assert looks_like_single_initial_byline_at_start(text) is False
+
+    # -- reject: body text not starting with byline --
+    @pytest.mark.parametrize("text", [
+        "Рассказ Майка Гелприна разворачивается в мире будущего",
+        "Introduction to the study and its objectives",
+        "",
+        "М. Гелприн написал рассказ",  # initial before surname, not byline format
+    ])
+    def test_rejects_non_byline_start(self, text):
+        assert looks_like_single_initial_byline_at_start(text) is False
+
+
+# ---------------------------------------------------------------------------
+# TestExtractSingleInitialBylinePrefix
+# ---------------------------------------------------------------------------
+
+class TestExtractSingleInitialBylinePrefix:
+    """Prefix extraction — returns just the byline token from merged text."""
+
+    @pytest.mark.parametrize("text, expected", [
+        ("Гелприн М. Рассказ Майка Гелприна разворачивается", "Гелприн М."),
+        ("Gelprin M. Mike Gelprin's story is set in a future", "Gelprin M."),
+        ("Иванов А. Аннотация: исследование показало", "Иванов А."),
+    ])
+    def test_extracts_prefix(self, text, expected):
+        assert extract_single_initial_byline_prefix(text) == expected
+
+    @pytest.mark.parametrize("text", [
+        "Гелприн М.",        # full-string byline (no trailing space+text) — prefix RE needs \s
+        "Gelprin M.",
+        "Рассказ Майка Гелприна разворачивается",
+        "Таблица А. Данные показали",  # structural label
+        "",
+    ])
+    def test_returns_none(self, text):
+        assert extract_single_initial_byline_prefix(text) is None
