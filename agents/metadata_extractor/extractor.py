@@ -22,9 +22,20 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import fitz  # PyMuPDF
 
+# Ensure repo root is on sys.path so 'shared' is importable when extractor is
+# invoked as a standalone script (without PYTHONPATH set by run_issue_pipeline.sh).
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+from shared.author_surname_normalizer import (
+    is_running_header as _is_running_header,
+    looks_like_author_byline as _looks_like_author_byline,
+    looks_like_single_initial_byline as _looks_like_single_initial_byline,
+)
 
 COMPONENT = "MetadataExtractor"
-VERSION = "1.3.2"  # Fix contents_marker: skip text_blocks > 30 chars (sentence vs TOC header)
+VERSION = "1.3.3"  # Fix _pick_ru/en_authors: running-header exclusion + positive byline gating (single-initial support)
 
 # Canonical DOI regex (case-insensitive)
 DOI_REGEX = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+\b", re.IGNORECASE)
@@ -314,24 +325,22 @@ def _is_likely_title_not_authors(text: str, is_ru: bool) -> bool:
 
 
 def _pick_ru_authors(page_candidates: List[Dict[str, Any]], ru_title: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    # Policy §7: first ru-candidate after title (by y0) matching comma or initials
-    # CRITICAL: exclude ru_title itself from candidates to prevent title from being picked as authors
+    # Policy §7: first ru-candidate after title (by y0) matching author byline pattern.
+    # Negative gate: running headers excluded via shared is_running_header.
+    # Positive gate: shared byline detection (2-initial or single-initial).
+    # CRITICAL: exclude ru_title itself from candidates to prevent title from being picked as authors.
     y0_title = float(ru_title["bbox"][1])
     ru_title_text = ru_title.get("text", "")
 
     after = [c for c in page_candidates if float(c["bbox"][1]) >= y0_title]
     after.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
     for c in after:
-        # Skip if this is the same block as ru_title (same text)
         if c.get("text") == ru_title_text:
             continue
-
         t = c["text"]
-        if len(t) >= 5 and ("," in t or AUTH_INITIALS_RE.search(t)):
-            # Additional check: skip if this looks like article title, not authors
-            if _is_likely_title_not_authors(t, is_ru=True):
-                continue
-
+        if _is_running_header(t):
+            continue
+        if _looks_like_author_byline(t) or _looks_like_single_initial_byline(t):
             return c
     return None
 
@@ -516,26 +525,37 @@ def _pick_en_title(page_candidates: List[Dict[str, Any]], page_height: float) ->
     return best[0]
 
 
-def _pick_en_authors(page_candidates: List[Dict[str, Any]], en_title: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """EN authors detection: first en-candidate after title matching comma or initials (Surname I.I.,)."""
-    # CRITICAL: exclude en_title itself from candidates to prevent title from being picked as authors
+def _pick_en_authors(
+    page_candidates: List[Dict[str, Any]],
+    en_title: Dict[str, Any],
+    page_height: Optional[float] = None,
+) -> Optional[Dict[str, Any]]:
+    """EN authors detection: first en-candidate after title matching author byline pattern.
+
+    Negative gate: running headers excluded via shared is_running_header.
+    Positive gate: shared byline detection (2-initial or single-initial).
+    Vertical constraint: when page_height provided, candidate y_mid must be in top
+      TOP_REGION_FRAC of the page — prevents bibliography entries at the bottom of the
+      page from being accepted as en_authors (regression Mg_2025-12 p111 Davidson).
+    CRITICAL: exclude en_title itself from candidates.
+    """
     y0_title = float(en_title["bbox"][1])
     en_title_text = en_title.get("text", "")
+    top_th = page_height * TOP_REGION_FRAC if page_height is not None else None
 
     after = [c for c in page_candidates if float(c["bbox"][1]) >= y0_title]
     after.sort(key=lambda x: (float(x["bbox"][1]), float(x["bbox"][0])))
     for c in after:
-        # Skip if this is the same block as en_title (same text)
         if c.get("text") == en_title_text:
             continue
-
         t = c["text"]
-        # EN author pattern: contains comma AND has initials like "I.I." or length >= 5
-        if len(t) >= 5 and ("," in t or EN_AUTH_INITIALS_RE.search(t)):
-            # Additional check: skip if this looks like article title, not authors
-            if _is_likely_title_not_authors(t, is_ru=False):
+        if _is_running_header(t):
+            continue
+        if top_th is not None:
+            y_mid = (float(c["bbox"][1]) + float(c["bbox"][3])) / 2.0
+            if y_mid > top_th:
                 continue
-
+        if _looks_like_author_byline(t) or _looks_like_single_initial_byline(t):
             return c
     return None
 
@@ -575,7 +595,7 @@ def _emit_en_blocks(doc: fitz.Document, text_blocks: List[Dict[str, Any]]) -> Li
                 }
             )
 
-            en_authors = _pick_en_authors(candidates, en_title)
+            en_authors = _pick_en_authors(candidates, en_title, page_height=page_h)
             if en_authors:
                 out.append(
                     {

@@ -122,3 +122,47 @@ def looks_like_author_byline(text: str) -> bool:
     if not text:
         return False
     return bool(_BYLINE_RE.match(text.strip()))
+
+
+# ---------------------------------------------------------------------------
+# Single-initial byline — foreign authors without patronymic
+# ---------------------------------------------------------------------------
+# Matches "Surname I." where the string consists entirely of one word + one
+# initial (anchored at both ends).  Requires full-string match to prevent
+# body-text fragments like "Анализируя труды В.Д." from matching.
+_SINGLE_INITIAL_BYLINE_RE = _re.compile(
+    r'^[A-Za-zА-Яа-яЁё]+'   # Surname (exactly one word)
+    r'[\s,]+'                 # Separator (space / comma)
+    r'[A-Za-zА-ЯЁёа-яё]\.'  # ONE initial + period
+    r'\s*$',                  # End of string (optional trailing whitespace)
+    _re.UNICODE
+)
+
+# Structural labels that form "Word X." patterns but are NOT author bylines.
+# Guard against false positives in single-initial detection.
+_SINGLE_INITIAL_STRUCTURAL_LABELS = frozenset({
+    "Таблица", "Рисунок", "Рис", "Схема", "Приложение", "Пример",
+    "Table", "Figure", "Fig", "Appendix",
+})
+
+
+def looks_like_single_initial_byline(text: str) -> bool:
+    """Return True if *text* is a single-initial author byline: 'Surname I.'
+
+    Handles foreign authors without patronymic (e.g. 'Гелприн М.', 'Gelprin M.').
+    Rejects structural labels ('Таблица А.', 'Рисунок В.', 'Introduction A.').
+    Does NOT match multi-word body-text fragments — anchored at both ends.
+    """
+    if not text:
+        return False
+    t = text.strip()
+    if not _SINGLE_INITIAL_BYLINE_RE.match(t):
+        return False
+    first_word = t.split()[0].rstrip('.,;:')
+    # Capitalise for stopword lookup (same convention as is_valid_surname)
+    first_word_cap = first_word[0].upper() + first_word[1:] if first_word else ""
+    if first_word in _SINGLE_INITIAL_STRUCTURAL_LABELS:
+        return False
+    if first_word_cap in STOPWORDS_HARD or first_word_cap in STOPWORDS_SOFT:
+        return False
+    return True

@@ -20,6 +20,7 @@ from shared.author_surname_normalizer import (  # noqa: E402
     is_valid_surname,
     is_toc_by_anchors,
     looks_like_author_byline,
+    looks_like_single_initial_byline,
 )
 from verifier import (  # noqa: E402
     _transliterate_ru_to_en,
@@ -279,3 +280,56 @@ class TestStepCScan:
         assert result is not None
         assert result["first_author_surname"] == "Bezchasnyi"
         assert result["first_author_surname_source"] == "text_block_translit"
+
+
+# ---------------------------------------------------------------------------
+# TestLooksLikeSingleInitialByline  (single-initial byline: "Surname I.")
+# ---------------------------------------------------------------------------
+class TestLooksLikeSingleInitialByline:
+    # -- accept: foreign authors without patronymic --
+    @pytest.mark.parametrize("text", [
+        "Гелприн М.",          # Cyrillic, case from Mh_2026-03
+        "Gelprin M.",          # Latin equivalent
+        "Иванов А.",           # standard single-initial Cyrillic
+        "Smith J.",            # standard single-initial Latin
+        "Гелприн М. ",         # trailing whitespace allowed
+    ])
+    def test_accepts_single_initial_bylines(self, text):
+        assert looks_like_single_initial_byline(text) is True
+
+    # -- reject: 2-initial bylines (handled by looks_like_author_byline) --
+    @pytest.mark.parametrize("text", [
+        "Плоткин Ф.Б.",        # 2-initial RU — NOT single-initial
+        "Plotkin F.B.",        # 2-initial EN
+        "Василькова ж.Г.",     # 2-initial RU with lowercase first initial
+    ])
+    def test_rejects_two_initial_bylines(self, text):
+        # These are valid author bylines but handled by looks_like_author_byline, not here
+        assert looks_like_single_initial_byline(text) is False
+
+    # -- reject: structural labels --
+    @pytest.mark.parametrize("text", [
+        "Таблица А.",
+        "Рисунок В.",
+        "Рис А.",
+        "Приложение Б.",
+        "Table A.",
+        "Figure B.",
+        "Fig C.",
+        "Appendix D.",
+    ])
+    def test_rejects_structural_labels(self, text):
+        assert looks_like_single_initial_byline(text) is False
+
+    # -- reject: body-text fragments with initials in the middle --
+    @pytest.mark.parametrize("text", [
+        "Анализируя труды В.Д.",          # multi-word before initial
+        "ским и другим изменениям В.Д.",  # fragment from body
+        "Том 21, № 3",                    # running header
+        "Introduction A.",                # non-byline structural
+        "",
+        "А.",                             # only initial, no surname
+        "М.",                             # only initial
+    ])
+    def test_rejects_non_bylines(self, text):
+        assert looks_like_single_initial_byline(text) is False
