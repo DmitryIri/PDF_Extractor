@@ -217,3 +217,18 @@
   - Verification: Re-run confirmed T=L=E=8 (was 9), single file Mg_2026-01_027-036_Grenaderova.pdf (207K), 7 other files unchanged
   - Export: /srv/pdf-extractor/exports/Mg/2026/Mg_2026-01/exports/2026_02_06__19_12_02/
   - Regression validation: Compared 9 files (before) vs 8 files (after), only Grenaderova changed as expected
+
+## 2026-03-31
+
+- **RU single-initial byline fix in MetadataExtractor v1.3.3 (Mh_2026-03 trigger):**
+  - Issue-триггер: выпуск Mh_2026-03 выявил три ошибки именования файлов
+  - Ошибочные filenames устранены:
+    - `Mh_2026-03_033-039_Analiziruya.pdf` → `Mh_2026-03_033-039_Vasilkova.pdf` (running header «Том 21, № 3» принимался за ru_authors)
+    - `Mh_2026-03_055-066_Skim.pdf` → `Mh_2026-03_055-066_Plotkin.pdf` (фрагмент тела статьи принимался за ru_authors)
+    - `Mh_2026-03_067-070_Editorial.pdf` → `Mh_2026-03_067-070_Gelprin.pdf` (single-initial автор «Гелприн М.» не проходил AUTH_INITIALS_RE → BoundaryDetector ошибочно классифицировал как editorial)
+  - Уровень fix'а: MetadataExtractor `_pick_ru_authors` — extractor-level author detection
+  - Решение: negative gate `is_running_header()` + positive gate `looks_like_author_byline()` / `looks_like_single_initial_byline()` / `extract_single_initial_byline_prefix()` вместо прежнего `"," in text or AUTH_INITIALS_RE`
+  - EN false-positive risk: при добавлении `_at_start` в `_pick_en_authors` обнаружен regression — «Lana R. Dzik;» принималась за single-initial byline (Mg_2025-12 p68). `_at_start` из EN-path убран; `TOP_REGION_FRAC=0.40` сохранён как guardrail.
+  - Валидация: T=L=E=9 (sha256 verified); тесты +93 (unit tests в `tests/unit/`)
+  - Commits: c9d1df5 (byline gating), ede3839 (prefix extraction)
+  - Policy: `docs/policies/filename_generation_policy_v_1_3.md`

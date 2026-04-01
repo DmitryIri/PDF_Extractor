@@ -1,7 +1,7 @@
 # Canonical Artifact Registry
 
 **Статус:** Canonical
-**Версия:** v_1_2
+**Версия:** v_1_3
 
 ## Назначение
 
@@ -164,7 +164,7 @@
 
 **Текущие канонические Policy:**
 - `article_start_detection_policy_v_1_0.md` — BoundaryDetector start detection
-- `filename_generation_policy_v_1_1.md` — MetadataVerifier filename generation (supersedes v_1_0)
+- `filename_generation_policy_v_1_3.md` — MetadataVerifier filename generation (supersedes v_1_2, v_1_1, v_1_0)
 
 ---
 
@@ -182,6 +182,7 @@
 
 ## 7. CHANGELOG
 
+- **v_1_3 — 2026-04-01** — §5.1 обновлён: canonical filename_generation_policy обновлён до v_1_3; исправлен накопленный drift (v_1_1 → v_1_2 → v_1_3).
 - **v_1_2 — 2026-02-04** — Добавлен тип Policy-артефакта (§5): Policy Documents. Зарегистрированы `article_start_detection_policy_v_1_0.md` и `filename_generation_policy_v_1_1.md`. Приоритет-порядок (§6) обновлён: Policy выше State.
 - **v_1_1 — 2026-01-22** — Добавлен тип Design-артефакта: Component Design Documents (§4.3) для поддержки детальных проектных документов компонентов (например, BoundaryDetector).
 - **v_1_0** — первичная каноническая фиксация реестра артефактов и их ролей.
