@@ -69,7 +69,7 @@ Project Files являются **единственным Source of Truth**.
 - `project_history_log.md`
 - `context_bootstrap_2026_02_04_v_1_0.md` — bootstrap artifact (2026-02-04)
 - `session_closure_log_YYYY_MM_DD_v_X_Y.md` (каждый файл — уникальная дата; naming: mixed dots/underscores — исторически; не переименовываются)
-  - Последний: `session_closure_log_2026_03_31_v_1_0.md` (Mh_2026-03: running-header exclusion + single-initial support)
+  - Последний: `session_closure_log_2026_04_01_v_1_0.md` (doc-closure: policy v_1_3, summary v_2_16)
 - `execution_report_2026_02_04_universal_surname_selection_fix.md`
 
 ---
