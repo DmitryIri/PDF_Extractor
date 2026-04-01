@@ -71,7 +71,8 @@ Project Files являются **единственным Source of Truth**.
 - `session_closure_log_YYYY_MM_DD_v_X_Y.md` (каждый файл — уникальная дата; naming: mixed dots/underscores — исторически; не переименовываются)
   - `session_closure_log_2026_04_01_v_1_0.md` (doc-closure: policy v_1_3, summary v_2_16)
   - `session_closure_log_2026_04_01_v_1_1.md` (CLAUDE.md + README.md rewrite; global skills claude-md-audit, readme-audit)
-  - Последний: `session_closure_log_2026_04_01_v_1_1.md`
+  - `session_closure_log_2026_04_01_v_1_2.md` (Mg_2026-03 production run T=L=E=9; очистка корня от 3 PDF-файлов)
+  - Последний: `session_closure_log_2026_04_01_v_1_2.md`
 - `execution_report_2026_02_04_universal_surname_selection_fix.md`
 
 ---
