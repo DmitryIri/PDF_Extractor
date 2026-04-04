@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 import policy_v_1_0
 
 COMPONENT = "BoundaryDetector"
-VERSION = "1.3.1"  # Fix _is_info_section_page: require no DOI on page (distinguish info vs research)
+VERSION = "1.3.2"  # Fix _has_contents_marker: forward-only window prevents false-positive on first research article
 
 EXIT_SUCCESS = 0
 EXIT_INVALID_INPUT = 10
@@ -261,13 +261,20 @@ def _apply_duplicate_filter(candidates: List[Dict[str, Any]], anchors: List[Dict
 
 def _has_contents_marker(page: int, anchors: List[Dict[str, Any]], window: int = 2) -> bool:
     """
-    Check if page (or nearby pages within window) has a contents_marker anchor.
+    Check if page (or the next `window` pages) has a contents_marker anchor.
     Returns True if contents marker detected.
+
+    Forward-only window: checks [page, page+window].
+    Rationale: a page is a Contents section start only if a contents_marker appears
+    ON or AFTER it (within the section body), not before it.  A backward window
+    (abs distance) causes false-positives: when TOC ends at page N and the first
+    research article starts at page N+1, the marker at page N is within abs-distance
+    2 of page N+1, incorrectly classifying the research article as contents.
     """
     for anchor in anchors:
         if anchor.get("type") == "contents_marker":
             anchor_page = anchor.get("page")
-            if anchor_page and abs(anchor_page - page) <= window:
+            if anchor_page and page <= anchor_page <= page + window:
                 return True
     return False
 
