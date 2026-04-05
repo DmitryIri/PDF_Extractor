@@ -43,6 +43,8 @@ conversation-*.txt
 !golden_tests/**/*.json
 # Allow project-level Claude Code settings
 !.claude/settings.json
+# === Conversation exchange directory (Claude Code / ChatGPT / User) ===
+0_Conversation/
 _audit/
 # Allow committing claude audit reports even if _audit is generally ignored
 !_audit/

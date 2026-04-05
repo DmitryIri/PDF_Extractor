@@ -1,6 +1,6 @@
 ---
 name: session-close-pdf_extractor
-description: Session closure workflow for pdf-extractor project. Archive /export artifacts, draft session_closure_log, enforce _audit gitignore discipline.
+description: Session closure workflow for pdf-extractor project. Archive /export artifacts, draft and write session_closure_log via doc-agent, enforce _audit gitignore discipline.
 ---
 
 # session-close-pdf_extractor
@@ -9,8 +9,9 @@ description: Session closure workflow for pdf-extractor project. Archive /export
 Single entrypoint for "Завершение сессии" for pdf-extractor.
 Full canonical closure workflow:
 1) Detect and archive Claude Code /export artifacts from repo root (via /archive-exports; deletion requires user confirmation).
-2) Draft `session_closure_log_YYYY_MM_DD_v_X_Y.md` (content + suggested path) using repo facts only.
-3) Provide final verification commands and enforce `_audit/**` non-tracking.
+2) Draft `session_closure_log_YYYY_MM_DD_v_X_Y.md` (content + path) using repo facts only.
+3) Write the log to `docs/state/` via doc-agent (/doc-create), then sync index via /doc-index.
+4) Provide final verification commands and enforce `_audit/**` non-tracking.
 
 ## Inputs
 None.
@@ -132,6 +133,24 @@ Rules:
 - Each bullet must be verifiable (command -> result -> fact).
 - If a section has no evidence, state "Нет данных" (do not invent).
 - Output must include: suggested file path + full markdown body (ready to save).
+
+#### B4) Write log via doc-agent (MANDATORY — Single Writer Contract)
+
+After B3 draft is complete, Claude Code MUST invoke the doc-agent to write the file.
+
+**Do NOT write docs/state/ directly.** Use Agent tool with subagent_type=doc-agent:
+
+```
+Prompt: Создай новый документ docs/state/<filename>.md
+        Содержимое: <verbatim draft from B3>
+        После создания выполни /doc-index.
+```
+
+Wait for doc-agent to confirm:
+- File created: `docs/state/session_closure_log_YYYY_MM_DD_v_X_Y.md`
+- project_files_index bumped (v_X_Y → v_X_Y+1)
+
+If doc-agent fails, STOP and report the error. Do NOT fall back to direct file write.
 
 ### Step C — Final checks & reminders (automated)
 Claude Code MUST execute:

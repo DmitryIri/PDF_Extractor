@@ -57,6 +57,22 @@ templates = Jinja2Templates(directory=str(_templates_dir))
 templates.env.filters["basename"] = lambda p: Path(p).name if p else ""
 
 
+def _plural_articles(n: int) -> str:
+    """Russian plural for 'статья': 1 статья, 2 статьи, 5 статей."""
+    n = abs(n) % 100
+    if 11 <= n <= 19:
+        return "статей"
+    n1 = n % 10
+    if n1 == 1:
+        return "статья"
+    if 2 <= n1 <= 4:
+        return "статьи"
+    return "статей"
+
+
+templates.env.filters["plural_articles"] = _plural_articles
+
+
 # ---------------------------------------------------------------------------
 # Startup
 # ---------------------------------------------------------------------------
