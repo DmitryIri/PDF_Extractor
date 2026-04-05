@@ -361,18 +361,20 @@ def _has_extractable_authors(page: int, anchors: List[Dict[str, Any]], window: i
 def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
     """
     Classify material_kind for an article start page.
-    Returns: "contents" | "editorial" | "research"
+    Returns: "contents" | "editorial" | "digest" | "research"
 
-    Rules:
-    - info: page has standalone ИНФОРМАЦИЯ/INFORMATION text_block
-    - contents: page has contents_marker anchor (or nearby within window of 2)
-    - editorial: article start WITHOUT extractable authors on same page (window=0)
-    - research: article start WITH extractable authors in window (page..page+1)
+    Rules (in priority order):
+    - info:      page has standalone ИНФОРМАЦИЯ/INFORMATION text_block (no article DOI)
+    - contents:  page has contents_marker anchor (or nearby within forward window of 2)
+    - research:  article start WITH extractable authors on same page (window=0)
+    - digest:    no authors AND ru_title starts with «Дайджест»/«Digest» (case-insensitive)
+    - editorial: fallback — no authors, no digest title
 
-    Editorial detection:
-    - Check only the article start page itself (window=0)
-    - This prevents misclassifying Editorial when next page has research article authors
-    - Example: page 5 (Editorial) followed by page 6 (Research with authors)
+    Digest vs editorial distinction:
+    - Both lack individual authors on the start page.
+    - Digest sections carry ru_title beginning with «Дайджест» / «Digest».
+    - Example: 'Дайджест англоязычной отраслевой периодики' → digest
+    - Example: 'ПРЕДИСЛОВИЕ РЕДАКТОРА' → editorial (no digest prefix)
     """
     # Check for info section (standalone ИНФОРМАЦИЯ/INFORMATION heading)
     if _is_info_section_page(page, anchors):
@@ -387,8 +389,12 @@ def _classify_material_kind(page: int, anchors: List[Dict[str, Any]]) -> str:
     # from subsequent research articles
     if _has_extractable_authors(page, anchors, window=0):
         return "research"
-    else:
-        return "editorial"
+
+    # Check for digest by ru_title prefix before falling back to editorial
+    if _has_digest_title(page, anchors):
+        return "digest"
+
+    return "editorial"
 
 
 def _is_mid_article_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
@@ -406,6 +412,25 @@ def _is_mid_article_page(page: int, anchors: List[Dict[str, Any]]) -> bool:
                 doi_start = int(m.group(1))
                 if doi_start < page:
                     return True
+    return False
+
+
+def _has_digest_title(page: int, anchors: List[Dict[str, Any]]) -> bool:
+    """True if page has a ru_title anchor whose text starts with «Дайджест» or «Digest».
+
+    Used to distinguish digest sections from true editorials.
+    Both share the same signal: no individual authors on the start page.
+    The ru_title prefix is the deterministic differentiator:
+      - 'Дайджест англоязычной отраслевой периодики' → digest
+      - 'ПРЕДИСЛОВИЕ РЕДАКТОРА' / 'Уважаемые коллеги' → editorial (no match)
+    """
+    for anchor in anchors:
+        if anchor.get("page") != page:
+            continue
+        if anchor.get("type") == "ru_title":
+            text = anchor.get("text", "").strip()
+            if text.lower().startswith(("дайджест", "digest")):
+                return True
     return False
 
 
