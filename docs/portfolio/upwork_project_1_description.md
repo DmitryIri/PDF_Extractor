@@ -21,7 +21,7 @@ Key technical highlights:
 • 18,000+ text anchors extracted per issue for boundary detection
 • GOST 7.79-2000 transliteration for canonical filenames
 • FastAPI + HTMX web UI for upload, processing, and ZIP download
-• Validated on 4 production issues (29 + 8 + 9 + 6 articles) with T=L=E and SHA-256 verification
+• Validated on 7 production issues (29 + 8 + 6 + 11 + 9 + 9 + 7 = 79 articles) with T=L=E and SHA-256 verification
 
 Stack: Python 3.12, PyMuPDF, FastAPI, SQLite, asyncio
 ```
@@ -42,4 +42,4 @@ Solo developer — architecture, implementation, testing, deployment
 - Repository: github.com/DmitryIri/PDF_Extractor (currently private — make public or fork as portfolio-public)
 - Upload screenshots in order: Architecture → Project Structure → Results proof
 - If asked about the "journal names": say "scientific journals in Russian medical domain" — no need to name specific titles
-- If asked about scale: "4 production issues processed end-to-end, each 6-29 articles"
+- If asked about scale: "7 production issues processed end-to-end, 79 articles total, each 6-29 articles"
