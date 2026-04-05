@@ -232,3 +232,55 @@
   - Валидация: T=L=E=9 (sha256 verified); тесты +93 (unit tests в `tests/unit/`)
   - Commits: c9d1df5 (byline gating), ede3839 (prefix extraction)
   - Policy: `docs/policies/filename_generation_policy_v_1_3.md`
+
+## 2026-04-01
+
+- **Mg_2026-03 production validation:**
+  - T=L=E=9 (1 Contents + 8 Research), sha256 verified
+  - Обработан через Phase 3 Web UI
+  - Export: `/srv/pdf-extractor/exports/Mg/2026/Mg_2026-03/`
+
+## 2026-04-04
+
+- **BoundaryDetector v1.3.2 (commit ed0c677):**
+  - Fix: `_has_contents_marker` — abs-window заменён на forward-only
+  - Причина: ложная Contents-классификация при наличии `contents_marker` в нестандартной позиции anchor-list
+  - Validation: Na_2026-03 T=L=E=7 ✅
+
+- **Na_2026-03 production validation:**
+  - T=L=E=7 (1 Contents + 1 Editorial + 4 Research + 1 Digest), sha256 verified
+  - Обработан через Phase 3 Web UI
+  - Первый production-confirmed Digest file: `Na_2026-03_056-094_Digest.pdf`
+  - ru_title: «Дайджест англоязычной отраслевой периодики»
+
+- **Phase 3 Web UI опубликован публично:**
+  - URL: `https://pdf-extractor.irdimas.ru`
+  - Stack: nginx + Let's Encrypt + Basic Auth (user=dmitry) + Cloudflare proxy
+
+## 2026-04-05
+
+- **BoundaryDetector v1.3.3 (commit 79466eb):**
+  - Добавлен `_has_digest_title(ru_title: str) -> bool`
+  - Семантический fix: editorial → digest когда `ru_title.startswith(("Дайджест", "Digest"))`
+  - Проверяется в `_classify_material_kind()` перед `return "editorial"` — приоритет над editorial fallback
+  - Validation: pytest 153/153 ✅, golden 28/28 ✅, material classification 29/29 EXACT MATCH ✅
+
+- **UI Hardening Pass v1 (commit 3e93a52):**
+  - `_plural_articles` Jinja2 filter (русское склонение «статья/статьи/статей»)
+  - footer Phase 3 в `ui/templates/base.html`
+  - `ui/templates/history.html`: локализация статусов + ZIP download button
+  - `ui/templates/partials/status_card.html`: pid removed, plural, sha256 Windows hint
+
+- **UI Hardening Pass v2 (commit f3f10be):**
+  - `_read_log_tail(log_path, n=25)` в `ui/main.py` — читает `[step N/8]` строки из лога pipeline
+  - Блок «Прогресс» в status_card RUNNING секции
+  - HTMX poll каждые 2с обновляет progress в реальном времени
+
+- **HTMX SRI hash fix (commit 5dc40ec):**
+  - Root cause: неверный SRI hash в `ui/templates/base.html` блокировал htmx.js → polling не работал
+  - Fix: hash исправлен на `sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC`
+  - Верифицировано в production: polling requests каждые 2с, progress виден без ручного refresh
+
+- **BoundaryDetector design doc v_1_4 создан** (`docs/design/pdf_extractor_boundary_detector_v_1_4.md`):
+  - Документирован v1.3.2 forward-only window fix (§3.6.1)
+  - Документирован v1.3.3 `_has_digest_title()` детерминированное правило (§3.6.3)
