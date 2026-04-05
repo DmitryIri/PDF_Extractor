@@ -42,10 +42,18 @@
       <span class="inline-flex h-3 w-3 rounded-full bg-blue-500 animate-pulse"></span>
       <span class="font-medium text-stone-700">Обработка…</span>
     </div>
-    <p class="text-sm text-stone-500">
+    <p class="text-sm text-stone-500 mb-3">
       Pipeline запущен. Обычно занимает 1–5 минут в зависимости от объёма журнала.
       Страница обновляется каждые 2 секунды.
     </p>
+
+    {% if log_tail is defined and log_tail %}
+    <div class="rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+      <p class="text-[11px] font-medium text-blue-400 mb-1.5 uppercase tracking-wide">Прогресс</p>
+      <pre class="text-xs text-stone-600 whitespace-pre-wrap leading-relaxed font-mono">{% for line in log_tail %}{{ line }}
+{% endfor %}</pre>
+    </div>
+    {% endif %}
 
   {# ── DONE ────────────────────────────────────────────────────────── #}
   {% elif run.status == 'done' %}

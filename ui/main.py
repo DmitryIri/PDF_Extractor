@@ -15,6 +15,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
+from typing import Optional
 
 import aiofiles
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -71,6 +72,18 @@ def _plural_articles(n: int) -> str:
 
 
 templates.env.filters["plural_articles"] = _plural_articles
+
+
+def _read_log_tail(log_path: Optional[str], n: int = 25) -> list[str]:
+    """Return last n [step …] and [merge …] lines from pipeline log file."""
+    if not log_path:
+        return []
+    try:
+        text = Path(log_path).read_text(errors="replace")
+        lines = [l for l in text.splitlines() if "[step" in l or "[merge" in l]
+        return lines[-n:]
+    except OSError:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -207,10 +220,13 @@ async def run_page(request: Request, run_id: str, error: str = "") -> HTMLRespon
     run = get_run(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Run not found")
+    run_dict = dict(run)
+    log_tail = _read_log_tail(run_dict.get("log_path")) if run_dict.get("status") == "running" else []
     return templates.TemplateResponse("run.html", {
         "request": request,
-        "run": dict(run),
+        "run": run_dict,
         "error": error,
+        "log_tail": log_tail,
     })
 
 
@@ -232,9 +248,12 @@ async def run_status_partial(request: Request, run_id: str) -> HTMLResponse:
     run = get_run(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Run not found")
+    run_dict = dict(run)
+    log_tail = _read_log_tail(run_dict.get("log_path")) if run_dict.get("status") == "running" else []
     return templates.TemplateResponse("partials/status_card.html", {
         "request": request,
-        "run": dict(run),
+        "run": run_dict,
+        "log_tail": log_tail,
     })
 
 
